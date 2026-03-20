@@ -159,7 +159,8 @@ const JullsApp = () => {
                     </div>
                 </div>
             </div>
-            {/* BANNER */}
+            {/* BANNER - solo en home */}
+            {view === 'home' && (
             <div className="relative w-full overflow-hidden" style={{ minHeight: 500 }}>
                 <picture>
                     <source media="(max-width: 767px)" srcSet="/313794.jpg" />
@@ -196,6 +197,7 @@ const JullsApp = () => {
                     </div>
                 </div>
             </div>
+            )}
 
             {/* HOME */}
             {view === 'home' && (
