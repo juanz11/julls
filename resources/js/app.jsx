@@ -374,6 +374,97 @@ const JullsApp = () => {
                 </div>
             )}
 
+            {/* FOOTER */}
+            <footer style={{ backgroundColor: '#3a2a30', color: '#e8d5db' }}>
+                <div className="max-w-6xl mx-auto px-6 py-12">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+
+                        {/* Marca */}
+                        <div>
+                            <div className="flex items-center gap-3 mb-4">
+                                <img src="/313790.jpg" alt="Julls" className="w-10 h-10 rounded-full object-cover" />
+                                <span className="font-black text-lg tracking-tighter" style={{ color: '#e8a0b4' }}>JULLS <span className="text-white">Repostería</span></span>
+                            </div>
+                            <p className="text-sm opacity-70 leading-relaxed mb-5">Galletas artesanales de autor. Elaboradas con mantequilla real, sin conservantes artificiales.</p>
+                            {/* Redes sociales */}
+                            <p className="text-xs font-bold uppercase tracking-widest mb-3 opacity-60">Síguenos</p>
+                            <div className="flex gap-3">
+                                {[
+                                    { label: 'Instagram', icon: '📸', href: '#' },
+                                    { label: 'Facebook', icon: '📘', href: '#' },
+                                    { label: 'TikTok', icon: '🎵', href: '#' },
+                                    { label: 'YouTube', icon: '▶️', href: '#' },
+                                ].map(s => (
+                                    <a key={s.label} href={s.href} title={s.label} target="_blank" rel="noreferrer"
+                                        className="w-9 h-9 rounded-full flex items-center justify-center text-base transition-all hover:scale-110"
+                                        style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                                        {s.icon}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Newsletter */}
+                        <div>
+                            <p className="font-black text-base mb-1" style={{ color: '#e8a0b4' }}>Recibe novedades</p>
+                            <p className="text-sm opacity-60 mb-4">Ofertas exclusivas y nuevos sabores directo a tu email.</p>
+                            <form onSubmit={e => e.preventDefault()} className="space-y-2">
+                                <input type="email" placeholder="tu@email.com" required
+                                    className="w-full rounded-xl px-4 py-2 text-sm outline-none text-slate-800"
+                                    style={{ backgroundColor: 'rgba(255,255,255,0.95)' }} />
+                                <div className="flex items-start gap-2">
+                                    <input type="checkbox" id="gdpr" required className="mt-1 flex-shrink-0" />
+                                    <label htmlFor="gdpr" className="text-xs opacity-60">He leído y acepto la <a href="#" className="underline">política de privacidad</a></label>
+                                </div>
+                                <button type="submit"
+                                    className="w-full py-2 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+                                    style={{ backgroundColor: '#bf7691' }}>
+                                    Suscribirme
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Links */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 content-start">
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-widest mb-3 opacity-60">Información</p>
+                                {[
+                                    { label: 'Contacto', href: '#' },
+                                    { label: 'Sobre nosotros', href: '#' },
+                                    { label: 'Preguntas frecuentes', href: '#' },
+                                    { label: 'Cómo pedimos', href: '#' },
+                                ].map(l => (
+                                    <a key={l.label} href={l.href}
+                                        className="block text-sm opacity-70 hover:opacity-100 mb-2 transition-opacity">
+                                        {l.label}
+                                    </a>
+                                ))}
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-widest mb-3 opacity-60">Legal</p>
+                                {[
+                                    { label: 'Aviso legal', href: '#' },
+                                    { label: 'Política de cookies', href: '#' },
+                                    { label: 'Política de privacidad', href: '#' },
+                                    { label: 'Términos de venta', href: '#' },
+                                ].map(l => (
+                                    <a key={l.label} href={l.href}
+                                        className="block text-sm opacity-70 hover:opacity-100 mb-2 transition-opacity">
+                                        {l.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom bar */}
+                    <div className="mt-10 pt-6 border-t flex flex-col md:flex-row items-center justify-between gap-2 text-xs opacity-40" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                        <span>© {new Date().getFullYear()} JULLS Repostería · Todos los derechos reservados</span>
+                        <span>Hecho con 🍪 y mucho amor</span>
+                    </div>
+                </div>
+            </footer>
+
             {/* CART DRAWER */}
             {cartOpen && (
                 <div className="fixed inset-0 z-50 flex">
