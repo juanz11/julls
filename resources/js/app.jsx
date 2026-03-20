@@ -3,174 +3,369 @@ import '../css/app.css';
 
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ChevronRight, ChevronLeft, BarChart3, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, X, ChevronRight, CheckCircle2, Package } from 'lucide-react';
+
+const products = [
+    {
+        id: 1,
+        name: 'Choco Crunch',
+        tag: 'BESTSELLER',
+        desc: 'Galleta rellena de chocolate y avellanas. Experiencia New York en cada mordida.',
+        price: 4.80,
+        image: '/313790.jpg',
+        weight: '150g / 6 unid.',
+        shelf: '90 días',
+        flavors: ['Chocolate Negro', 'Chocolate con Leche', 'Chocolate Blanco'],
+    },
+    {
+        id: 2,
+        name: 'Velvet Cream',
+        tag: 'PREMIUM',
+        desc: 'Masa Red Velvet con centro cremoso. Ideal para regalo o consumo gourmet.',
+        price: 5.50,
+        image: '/313792.jpg',
+        weight: '150g / 6 unid.',
+        shelf: '90 días',
+        flavors: ['Crema Vainilla', 'Crema Fresa', 'Crema Limón'],
+    },
+    {
+        id: 3,
+        name: 'Minis Crunch',
+        tag: 'BITE-SIZE',
+        desc: 'Sin relleno. Alta rotación, empaque snack. Perfectas para compartir.',
+        price: 1.90,
+        image: '/313794.jpg',
+        weight: 'Stand-up Pouch',
+        shelf: '90 días',
+        flavors: ['Clásica', 'Canela', 'Cacao'],
+    },
+];
+
+const PINK = '#bf7691';
+const LIGHT = '#faf0f1';
 
 const JullsApp = () => {
-    const [currentPage, setCurrentPage] = useState(0);
+    const [view, setView] = useState('home'); // home | catalog | order-success
+    const [cart, setCart] = useState([]);
+    const [cartOpen, setCartOpen] = useState(false);
+    const [selectedFlavors, setSelectedFlavors] = useState({});
+    const [orderForm, setOrderForm] = useState({ name: '', phone: '', address: '', notes: '' });
+    const [checkingOut, setCheckingOut] = useState(false);
 
-    const pages = [
-        {
-            title: "JULLS Repostería Artesanal",
-            subtitle: "Propuesta Comercial para Grandes Superficies y Bodegones Premium",
-            content: (
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                    <div className="md:w-1/2 space-y-6">
-                        <div className="inline-block px-4 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-bold tracking-wider">NUEVA YORK EN VALENCIA</div>
-                        <h1 className="text-5xl font-black text-amber-900 leading-tight">El Arte de la Galleta <span className="text-amber-600">Perfecta</span></h1>
-                        <p className="text-lg text-slate-600 leading-relaxed">Galletas de autor tipo New York, elaboradas con ingredientes funcionales y un proceso semi-industrial estandarizado que garantiza frescura y escalabilidad.</p>
-                        <ul className="space-y-3">
-                            {["Registro Sanitario y CPE Vigentes", "90 días de vida de anaquel garantizados", "Ingredientes Premium (Mantequilla Real y Avellanas)", "Concepto 'Bake-at-home' para experiencia de frescura"].map((item, i) => (
-                                <li key={i} className="flex items-center gap-2 text-slate-700 font-medium">
-                                    <CheckCircle2 className="text-amber-500 w-5 h-5" /> {item}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                    <div className="md:w-1/2">
-                        <div className="bg-amber-50 rounded-3xl p-8 border-2 border-amber-100 shadow-2xl overflow-hidden">
-                            <div className="aspect-square bg-white rounded-2xl flex items-center justify-center shadow-inner mb-4 overflow-hidden">
-                                <div className="text-center">
-                                    <div className="w-48 h-48 bg-amber-800 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-6xl font-black shadow-lg">J</div>
-                                    <h3 className="text-2xl font-bold text-amber-900">CHOCO CRUNCH</h3>
-                                    <p className="text-amber-600 font-bold tracking-widest text-sm italic">ORIGINAL RECIPE</p>
-                                </div>
-                            </div>
-                            <div className="flex justify-between items-end">
-                                <div>
-                                    <p className="text-xs text-slate-400 uppercase font-bold">Peso Neto</p>
-                                    <p className="text-xl font-black text-slate-800">150g / 6 Unid.</p>
-                                </div>
-                                <div className="bg-amber-900 text-white px-4 py-2 rounded-xl text-center">
-                                    <p className="text-[10px] uppercase">Margen Retail</p>
-                                    <p className="text-xl font-black">37.5%</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ),
-        },
-        {
-            title: "Arquitectura de Portafolio",
-            subtitle: "Diversificación estratégica para maximizar la rotación de inventario",
-            content: (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[
-                        { name: "Choco Crunch", tag: "CASH COW", slogan: "Experiencia New York", desc: "Nuestra insignia. Rellena de chocolate y avellanas. Alta percepción de valor.", color: "bg-amber-900", pouch: "Pack 150g" },
-                        { name: "Velvet Cream", tag: "PREMIUM", slogan: "Sofisticación Pura", desc: "Masa Red Velvet con centro cremoso. Ideal para regalos y consumo gourmet.", color: "bg-red-800", pouch: "Pack 150g" },
-                        { name: "Minis Crunch", tag: "BITE-SIZE", slogan: "Sabor en Movimiento", desc: "Sin relleno. Alta rotación, empaque snack. Perfecto para cajas de pago.", color: "bg-amber-600", pouch: "Stand-up Pouch" },
-                    ].map((item, i) => (
-                        <div key={i} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-                            <div>
-                                <span className={`text-[10px] font-bold text-white px-2 py-1 rounded-md ${item.color} mb-4 inline-block tracking-tighter`}>{item.tag}</span>
-                                <h3 className="text-xl font-bold text-slate-900 mb-1">{item.name}</h3>
-                                <p className="text-xs font-semibold text-amber-600 uppercase mb-3">{item.slogan}</p>
-                                <p className="text-sm text-slate-500 mb-4 italic">"{item.desc}"</p>
-                            </div>
-                            <div className="pt-4 border-t border-slate-100 text-center">
-                                <p className="text-xs text-slate-400 mb-1">Formato</p>
-                                <p className="font-bold text-slate-800">{item.pouch}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ),
-        },
-        {
-            title: "Análisis Financiero B2B",
-            subtitle: "Garantizando la mayor rentabilidad por centímetro de anaquel",
-            content: (
-                <div className="space-y-8">
-                    <div className="overflow-hidden border border-slate-200 rounded-2xl shadow-xl">
-                        <table className="w-full text-left bg-white">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900">PRODUCTO</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900">COSTO DISTRIBUIDOR</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900">PVP SUGERIDO</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900 text-center">MARGEN RETAIL (%)</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {[
-                                    { name: "Choco Crunch (150g)", dist: "$3.00", pvp: "$4.80", margin: "37.5%" },
-                                    { name: "Velvet Cream (150g)", dist: "$3.50", pvp: "$5.50", margin: "36.3%" },
-                                    { name: "Minis Choco Crunch", dist: "$1.20", pvp: "$1.90", margin: "36.8%" },
-                                ].map((row, i) => (
-                                    <tr key={i} className="hover:bg-amber-50/30 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-slate-800">{row.name}</td>
-                                        <td className="px-6 py-4 text-slate-600">{row.dist}</td>
-                                        <td className="px-6 py-4 text-slate-600">{row.pvp}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-black">{row.margin}</span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-amber-900 p-6 rounded-2xl text-white">
-                            <div className="flex items-center gap-3 mb-4">
-                                <BarChart3 className="w-8 h-8 text-amber-400" />
-                                <h4 className="text-xl font-bold">Ventaja Competitiva</h4>
-                            </div>
-                            <p className="text-amber-100 text-sm leading-relaxed">Nuestros márgenes superan el promedio de la categoría (25%), permitiendo a nuestros aliados comerciales recuperar la inversión más rápido mientras ofrecen un producto premium con alta tasa de recompra.</p>
-                        </div>
-                        <div className="bg-slate-100 p-6 rounded-2xl border-2 border-dashed border-slate-300">
-                            <h4 className="text-slate-800 font-bold mb-2 italic">Certificaciones y Garantías</h4>
-                            <p className="text-slate-600 text-xs mb-4">Procesos estandarizados bajo normativas sanitarias. Empaques de alta barrera que garantizan frescura sin necesidad de conservantes artificiales invasivos.</p>
-                            <div className="flex gap-4">
-                                {["CPE", "GTIN", "SISA"].map(cert => (
-                                    <div key={cert} className="w-12 h-12 bg-white rounded-lg shadow-sm flex items-center justify-center font-bold text-xs text-slate-400">{cert}</div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ),
-        },
-    ];
+    const totalItems = cart.reduce((s, i) => s + i.qty, 0);
+    const totalPrice = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+    const addToCart = (product) => {
+        const flavor = selectedFlavors[product.id] || product.flavors[0];
+        setCart(prev => {
+            const existing = prev.find(i => i.id === product.id && i.flavor === flavor);
+            if (existing) return prev.map(i => i.id === product.id && i.flavor === flavor ? { ...i, qty: i.qty + 1 } : i);
+            return [...prev, { ...product, flavor, qty: 1 }];
+        });
+    };
+
+    const updateQty = (id, flavor, delta) => {
+        setCart(prev => prev
+            .map(i => i.id === id && i.flavor === flavor ? { ...i, qty: i.qty + delta } : i)
+            .filter(i => i.qty > 0)
+        );
+    };
+
+    const handleOrder = (e) => {
+        e.preventDefault();
+        setCartOpen(false);
+        setCart([]);
+        setOrderForm({ name: '', phone: '', address: '', notes: '' });
+        setCheckingOut(false);
+        setView('order-success');
+    };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-            <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-100">
-                <div className="px-12 pt-12 pb-6 flex justify-between items-start border-b border-slate-50">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <div className="w-8 h-8 bg-amber-900 rounded-lg flex items-center justify-center text-white font-black text-xs">J</div>
-                            <span className="font-black text-slate-900 tracking-tighter">JULLS <span className="text-amber-600">REPOSTERÍA</span></span>
+        <div className="min-h-screen font-sans" style={{ backgroundColor: LIGHT }}>
+
+            {/* NAV */}
+            <nav className="sticky top-0 z-40 border-b" style={{ backgroundColor: '#fff', borderColor: '#f0dde3' }}>
+                <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <button onClick={() => setView('home')} className="flex items-center gap-3">
+                        <img src="/313790.jpg" alt="Julls Logo" className="w-10 h-10 rounded-full object-cover" />
+                        <span className="font-black text-lg tracking-tighter" style={{ color: PINK }}>JULLS <span className="text-slate-700">Repostería</span></span>
+                    </button>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setView('catalog')}
+                            className="text-sm font-bold px-4 py-2 rounded-full transition-all"
+                            style={{ color: view === 'catalog' ? '#fff' : PINK, backgroundColor: view === 'catalog' ? PINK : 'transparent', border: `2px solid ${PINK}` }}
+                        >
+                            Catálogo
+                        </button>
+                        <button
+                            onClick={() => setCartOpen(true)}
+                            className="relative p-2 rounded-full"
+                            style={{ backgroundColor: PINK }}
+                        >
+                            <ShoppingCart className="w-5 h-5 text-white" />
+                            {totalItems > 0 && (
+                                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">{totalItems}</span>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            {/* HOME */}
+            {view === 'home' && (
+                <div>
+                    {/* Hero */}
+                    <div className="max-w-6xl mx-auto px-6 py-20 flex flex-col md:flex-row items-center gap-12">
+                        <div className="md:w-1/2 space-y-6">
+                            <div className="inline-block px-4 py-1 rounded-full text-sm font-bold" style={{ backgroundColor: '#f5dde5', color: PINK }}>
+                                Nueva York en Valencia 🍪
+                            </div>
+                            <h1 className="text-5xl font-black text-slate-900 leading-tight">
+                                El Arte de la<br /><span style={{ color: PINK }}>Galleta Perfecta</span>
+                            </h1>
+                            <p className="text-slate-500 text-lg leading-relaxed">
+                                Galletas artesanales de autor, elaboradas con mantequilla real y avellanas. Frescura garantizada, sabor inigualable.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setView('catalog')}
+                                    className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-white transition-all hover:opacity-90"
+                                    style={{ backgroundColor: PINK }}
+                                >
+                                    Ver Catálogo <ChevronRight size={18} />
+                                </button>
+                            </div>
+                            <ul className="space-y-2 pt-2">
+                                {['Registro Sanitario y CPE Vigentes', '90 días de vida de anaquel', 'Sin conservantes artificiales'].map((item, i) => (
+                                    <li key={i} className="flex items-center gap-2 text-slate-600 text-sm font-medium">
+                                        <CheckCircle2 className="w-4 h-4" style={{ color: PINK }} /> {item}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
-                        <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{pages[currentPage].title}</h2>
-                        <p className="text-slate-400 text-sm font-medium">{pages[currentPage].subtitle}</p>
+                        <div className="md:w-1/2 flex justify-center">
+                            <div className="relative">
+                                <div className="w-72 h-72 rounded-full overflow-hidden shadow-2xl border-4" style={{ borderColor: PINK }}>
+                                    <img src="/313790.jpg" alt="Julls Galletas" className="w-full h-full object-cover" />
+                                </div>
+                                <div className="absolute -bottom-4 -right-4 rounded-2xl px-4 py-3 shadow-lg text-white text-center" style={{ backgroundColor: PINK }}>
+                                    <p className="text-[10px] uppercase font-bold">Margen Retail</p>
+                                    <p className="text-2xl font-black">37.5%</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <span className="text-slate-300 font-bold text-xl">{String(currentPage + 1).padStart(2, '0')} / 03</span>
-                </div>
 
-                <div className="px-12 py-10 min-h-[450px]">
-                    {pages[currentPage].content}
-                </div>
-
-                <div className="px-12 py-8 bg-slate-50 flex justify-between items-center">
-                    <div className="text-xs text-slate-400 font-medium">© 2026 Julls Repostería, C.A. • Valencia, Venezuela • Estrategia de Crecimiento</div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                            disabled={currentPage === 0}
-                            className="p-3 rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-amber-100 hover:text-amber-900 disabled:opacity-30 transition-all shadow-sm"
-                        >
-                            <ChevronLeft />
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(pages.length - 1, prev + 1))}
-                            disabled={currentPage === pages.length - 1}
-                            className="p-3 rounded-full bg-amber-900 text-white hover:bg-amber-800 disabled:opacity-30 transition-all shadow-md flex items-center gap-2 px-6 font-bold"
-                        >
-                            {currentPage === pages.length - 1 ? "Finalizar" : "Siguiente"} <ChevronRight size={20} />
-                        </button>
+                    {/* Preview productos */}
+                    <div className="max-w-6xl mx-auto px-6 pb-20">
+                        <h2 className="text-2xl font-black text-slate-800 mb-8 text-center">Nuestros Productos</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {products.map(p => (
+                                <div key={p.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border" style={{ borderColor: '#f0dde3' }}>
+                                    <div className="h-48 overflow-hidden">
+                                        <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="p-5">
+                                        <span className="text-[10px] font-bold text-white px-2 py-1 rounded-md" style={{ backgroundColor: PINK }}>{p.tag}</span>
+                                        <h3 className="text-lg font-black text-slate-900 mt-2">{p.name}</h3>
+                                        <p className="text-slate-500 text-sm mt-1 mb-4">{p.desc}</p>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xl font-black" style={{ color: PINK }}>${p.price.toFixed(2)}</span>
+                                            <button
+                                                onClick={() => { setView('catalog'); }}
+                                                className="text-sm font-bold px-4 py-2 rounded-full text-white"
+                                                style={{ backgroundColor: PINK }}
+                                            >
+                                                Pedir
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
+
+            {/* CATALOG */}
+            {view === 'catalog' && (
+                <div className="max-w-6xl mx-auto px-6 py-12">
+                    <div className="mb-8">
+                        <h2 className="text-3xl font-black text-slate-900">Catálogo de Pedidos</h2>
+                        <p className="text-slate-500 mt-1">Selecciona tu sabor y agrega al carrito</p>
+                    </div>
+                    <div className="space-y-6">
+                        {products.map(p => (
+                            <div key={p.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border flex flex-col md:flex-row" style={{ borderColor: '#f0dde3' }}>
+                                <div className="md:w-56 h-48 md:h-auto overflow-hidden flex-shrink-0">
+                                    <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="p-6 flex flex-col justify-between flex-1">
+                                    <div>
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div>
+                                                <span className="text-[10px] font-bold text-white px-2 py-1 rounded-md" style={{ backgroundColor: PINK }}>{p.tag}</span>
+                                                <h3 className="text-xl font-black text-slate-900 mt-2">{p.name}</h3>
+                                                <p className="text-slate-500 text-sm mt-1">{p.desc}</p>
+                                            </div>
+                                            <span className="text-2xl font-black ml-4 flex-shrink-0" style={{ color: PINK }}>${p.price.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex gap-2 flex-wrap mt-3 mb-1">
+                                            <span className="text-xs text-slate-400 font-medium flex items-center gap-1"><Package size={12} /> {p.weight}</span>
+                                            <span className="text-xs text-slate-400 font-medium">• Anaquel: {p.shelf}</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4">
+                                        <p className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">Elige tu sabor:</p>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {p.flavors.map(f => (
+                                                <button
+                                                    key={f}
+                                                    onClick={() => setSelectedFlavors(prev => ({ ...prev, [p.id]: f }))}
+                                                    className="px-3 py-1 rounded-full text-sm font-semibold border-2 transition-all"
+                                                    style={{
+                                                        borderColor: PINK,
+                                                        backgroundColor: (selectedFlavors[p.id] || p.flavors[0]) === f ? PINK : 'transparent',
+                                                        color: (selectedFlavors[p.id] || p.flavors[0]) === f ? '#fff' : PINK,
+                                                    }}
+                                                >
+                                                    {f}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => { addToCart(p); setCartOpen(true); }}
+                                            className="flex items-center gap-2 px-5 py-2 rounded-full font-bold text-white transition-all hover:opacity-90"
+                                            style={{ backgroundColor: PINK }}
+                                        >
+                                            <ShoppingCart size={16} /> Agregar al carrito
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* ORDER SUCCESS */}
+            {view === 'order-success' && (
+                <div className="max-w-md mx-auto px-6 py-24 text-center">
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: '#f5dde5' }}>
+                        <CheckCircle2 className="w-10 h-10" style={{ color: PINK }} />
+                    </div>
+                    <h2 className="text-3xl font-black text-slate-900 mb-3">¡Pedido Recibido!</h2>
+                    <p className="text-slate-500 mb-8">Nos pondremos en contacto contigo pronto para confirmar tu pedido. ¡Gracias por elegir Julls!</p>
+                    <button
+                        onClick={() => setView('catalog')}
+                        className="px-6 py-3 rounded-full font-bold text-white"
+                        style={{ backgroundColor: PINK }}
+                    >
+                        Hacer otro pedido
+                    </button>
+                </div>
+            )}
+
+            {/* CART DRAWER */}
+            {cartOpen && (
+                <div className="fixed inset-0 z-50 flex">
+                    <div className="flex-1 bg-black/40" onClick={() => { setCartOpen(false); setCheckingOut(false); }} />
+                    <div className="w-full max-w-md bg-white h-full overflow-y-auto flex flex-col shadow-2xl">
+                        <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: '#f0dde3' }}>
+                            <h3 className="text-xl font-black text-slate-900">Tu Carrito</h3>
+                            <button onClick={() => { setCartOpen(false); setCheckingOut(false); }}>
+                                <X className="w-5 h-5 text-slate-400" />
+                            </button>
+                        </div>
+
+                        {cart.length === 0 ? (
+                            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-3">
+                                <ShoppingCart className="w-12 h-12 opacity-30" />
+                                <p className="font-medium">Tu carrito está vacío</p>
+                            </div>
+                        ) : !checkingOut ? (
+                            <>
+                                <div className="flex-1 p-6 space-y-4">
+                                    {cart.map((item, i) => (
+                                        <div key={i} className="flex items-center gap-4 p-3 rounded-xl border" style={{ borderColor: '#f0dde3' }}>
+                                            <img src={item.image} alt={item.name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-bold text-slate-800 text-sm truncate">{item.name}</p>
+                                                <p className="text-xs text-slate-400">{item.flavor}</p>
+                                                <p className="text-sm font-black mt-1" style={{ color: PINK }}>${(item.price * item.qty).toFixed(2)}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => updateQty(item.id, item.flavor, -1)} className="w-7 h-7 rounded-full border flex items-center justify-center" style={{ borderColor: PINK }}>
+                                                    <Minus size={12} style={{ color: PINK }} />
+                                                </button>
+                                                <span className="w-5 text-center font-bold text-sm">{item.qty}</span>
+                                                <button onClick={() => updateQty(item.id, item.flavor, 1)} className="w-7 h-7 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: PINK }}>
+                                                    <Plus size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="p-6 border-t" style={{ borderColor: '#f0dde3' }}>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="font-bold text-slate-700">Total</span>
+                                        <span className="text-2xl font-black" style={{ color: PINK }}>${totalPrice.toFixed(2)}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setCheckingOut(true)}
+                                        className="w-full py-3 rounded-full font-bold text-white text-center"
+                                        style={{ backgroundColor: PINK }}
+                                    >
+                                        Proceder al Pedido
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <form onSubmit={handleOrder} className="flex-1 flex flex-col p-6 gap-4">
+                                <h4 className="font-black text-slate-800 text-lg">Datos de Entrega</h4>
+                                {[
+                                    { key: 'name', label: 'Nombre completo', type: 'text', placeholder: 'Tu nombre' },
+                                    { key: 'phone', label: 'Teléfono / WhatsApp', type: 'tel', placeholder: '+58 412 000 0000' },
+                                    { key: 'address', label: 'Dirección', type: 'text', placeholder: 'Calle, sector, ciudad' },
+                                ].map(f => (
+                                    <div key={f.key}>
+                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">{f.label}</label>
+                                        <input
+                                            type={f.type}
+                                            required
+                                            placeholder={f.placeholder}
+                                            value={orderForm[f.key]}
+                                            onChange={e => setOrderForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                                            className="w-full border rounded-xl px-4 py-2 text-sm outline-none focus:ring-2"
+                                            style={{ borderColor: '#f0dde3', focusRingColor: PINK }}
+                                        />
+                                    </div>
+                                ))}
+                                <div>
+                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Notas (opcional)</label>
+                                    <textarea
+                                        placeholder="Instrucciones especiales..."
+                                        value={orderForm.notes}
+                                        onChange={e => setOrderForm(prev => ({ ...prev, notes: e.target.value }))}
+                                        className="w-full border rounded-xl px-4 py-2 text-sm outline-none resize-none h-20"
+                                        style={{ borderColor: '#f0dde3' }}
+                                    />
+                                </div>
+                                <div className="mt-auto pt-4 border-t" style={{ borderColor: '#f0dde3' }}>
+                                    <div className="flex justify-between mb-3">
+                                        <span className="font-bold text-slate-700">Total del pedido</span>
+                                        <span className="font-black text-lg" style={{ color: PINK }}>${totalPrice.toFixed(2)}</span>
+                                    </div>
+                                    <button type="submit" className="w-full py-3 rounded-full font-bold text-white" style={{ backgroundColor: PINK }}>
+                                        Confirmar Pedido
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
