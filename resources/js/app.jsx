@@ -132,6 +132,33 @@ const JullsApp = () => {
                 </div>
             </nav>
 
+            {/* BARRA DE CATEGORÍAS */}
+            <div className="w-full border-b bg-white" style={{ borderColor: '#f0dde3' }}>
+                <div className="max-w-6xl mx-auto px-4">
+                    <div className="flex items-center justify-center gap-1 overflow-x-auto py-2 scrollbar-hide">
+                        {[
+                            { icon: '🍪', label: 'Galletas' },
+                            { icon: '🎂', label: 'Tartas' },
+                            { icon: '🧁', label: 'Cupcakes' },
+                            { icon: '🍫', label: 'Chocolate' },
+                            { icon: '🎁', label: 'Regalos' },
+                            { icon: '⭐', label: 'Novedades' },
+                            { icon: '🏷️', label: 'Ofertas' },
+                        ].map((cat) => (
+                            <button
+                                key={cat.label}
+                                onClick={() => setView('catalog')}
+                                className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl hover:bg-pink-50 transition-colors flex-shrink-0 group"
+                            >
+                                <span className="text-3xl leading-none">{cat.icon}</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500 group-hover:text-pink-400 transition-colors whitespace-nowrap" style={{ color: '#9a7080' }}>
+                                    {cat.label}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
             {/* BANNER */}
             <div className="relative w-full overflow-hidden" style={{ minHeight: 500 }}>
                 <picture>
