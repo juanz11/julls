@@ -1,11 +1,13 @@
 import './bootstrap';
 import '../css/app.css';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ShoppingCart, Plus, Minus, X, ChevronRight, CheckCircle2, Package } from 'lucide-react';
 
-const products = [
+const STORAGE_KEY = 'julls_products';
+
+const DEFAULT_PRODUCTS = [
     {
         id: 1,
         name: 'Choco Crunch',
@@ -45,12 +47,30 @@ const PINK = '#bf7691';
 const LIGHT = '#faf0f1';
 
 const JullsApp = () => {
-    const [view, setView] = useState('home'); // home | catalog | order-success
+    const [view, setView] = useState('home');
+    const [products, setProducts] = useState(() => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
+        } catch { return DEFAULT_PRODUCTS; }
+    });
     const [cart, setCart] = useState([]);
     const [cartOpen, setCartOpen] = useState(false);
     const [selectedFlavors, setSelectedFlavors] = useState({});
     const [orderForm, setOrderForm] = useState({ name: '', phone: '', address: '', notes: '' });
     const [checkingOut, setCheckingOut] = useState(false);
+
+    // Sincronizar con cambios del admin (mismo navegador)
+    useEffect(() => {
+        const onStorage = () => {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) setProducts(JSON.parse(saved));
+            } catch {}
+        };
+        window.addEventListener('storage', onStorage);
+        return () => window.removeEventListener('storage', onStorage);
+    }, []);
 
     const totalItems = cart.reduce((s, i) => s + i.qty, 0);
     const totalPrice = cart.reduce((s, i) => s + i.price * i.qty, 0);
@@ -111,6 +131,44 @@ const JullsApp = () => {
                     </div>
                 </div>
             </nav>
+
+            {/* BANNER */}
+            <div className="relative w-full overflow-hidden" style={{ minHeight: 500 }}>
+                <picture>
+                    <source media="(max-width: 767px)" srcSet="/313794.jpg" />
+                    <source media="(min-width: 768px)" srcSet="/313790.jpg" />
+                    <img
+                        src="/313790.jpg"
+                        alt="Banner galletas"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ filter: 'brightness(0.55)' }}
+                    />
+                </picture>
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 100%)' }} />
+                <div className="relative z-10 max-w-6xl mx-auto px-6 py-24 flex flex-col md:flex-row items-center md:items-end gap-6" style={{ minHeight: 500 }}>
+                    <div className="flex-1">
+                        <p className="text-white text-sm font-bold uppercase tracking-widest mb-2 opacity-80">Edición Especial</p>
+                        <h2 className="text-white text-5xl md:text-7xl font-black leading-tight drop-shadow">
+                            -15% EN TODAS<br />LAS GALLETAS
+                        </h2>
+                        <p className="text-white/80 text-base mt-3">Hasta el 31 de marzo · Solo pedidos online</p>
+                    </div>
+                    <div className="flex flex-col items-start md:items-end gap-3">
+                        <div className="px-5 py-2 rounded-full font-black text-white text-base tracking-wide" style={{ backgroundColor: PINK }}>
+                            CÓDIGO: <span className="uppercase">GALLETAS15</span>
+                        </div>
+                        <button
+                            onClick={() => setView('catalog')}
+                            className="px-6 py-2 rounded-full font-bold text-sm border-2 border-white text-white hover:bg-white transition-all"
+                            style={{ color: 'white' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = PINK; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = 'white'; }}
+                        >
+                            Ver Catálogo →
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             {/* HOME */}
             {view === 'home' && (
