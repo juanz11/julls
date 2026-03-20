@@ -104,6 +104,7 @@ function ProductForm({ product, onChange, onDelete, index }) {
     const [open, setOpen] = useState(false);
     const [newFlavor, setNewFlavor] = useState('');
     const fileRef = useRef();
+    const fileRef2 = useRef();
 
     const update = (field, value) => onChange(index, { ...product, [field]: value });
 
@@ -120,6 +121,14 @@ function ProductForm({ product, onChange, onDelete, index }) {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (ev) => update('image', ev.target.result);
+        reader.readAsDataURL(file);
+    };
+
+    const handleImageFile2 = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => update('image2', ev.target.result);
         reader.readAsDataURL(file);
     };
 
@@ -164,11 +173,10 @@ function ProductForm({ product, onChange, onDelete, index }) {
                             style={{ borderColor: '#f0dde3' }} />
                     </div>
 
-                    {/* Imagen */}
+                    {/* Imagen principal */}
                     <div>
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Imagen del producto</label>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Imagen principal</label>
                         <div className="flex gap-3 items-start">
-                            {/* Preview */}
                             <div className="w-24 h-24 rounded-xl border overflow-hidden flex-shrink-0 bg-slate-50 flex items-center justify-center" style={{ borderColor: '#f0dde3' }}>
                                 {product.image
                                     ? <img src={product.image} alt="preview" className="w-full h-full object-cover" onError={e => e.target.style.display='none'} />
@@ -176,23 +184,41 @@ function ProductForm({ product, onChange, onDelete, index }) {
                                 }
                             </div>
                             <div className="flex-1 space-y-2">
-                                {/* Subir archivo */}
                                 <input type="file" accept="image/*" ref={fileRef} onChange={handleImageFile} className="hidden" />
-                                <button
-                                    onClick={() => fileRef.current.click()}
+                                <button onClick={() => fileRef.current.click()}
                                     className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-sm font-bold transition-colors hover:bg-pink-50 w-full justify-center"
-                                    style={{ borderColor: PINK, color: PINK }}
-                                >
+                                    style={{ borderColor: PINK, color: PINK }}>
                                     <Upload size={15} /> Subir imagen desde PC
                                 </button>
-                                {/* O URL */}
-                                <input
-                                    type="text" value={product.image.startsWith('data:') ? '' : product.image}
+                                <input type="text" value={product.image.startsWith('data:') ? '' : product.image}
                                     onChange={e => update('image', e.target.value)}
                                     placeholder="O pega una URL: https://..."
-                                    className="w-full border rounded-xl px-3 py-2 text-sm outline-none"
-                                    style={{ borderColor: '#f0dde3' }}
-                                />
+                                    className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Segunda imagen (hover) */}
+                    <div>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Segunda imagen <span className="font-normal text-slate-400 normal-case">(aparece al pasar el mouse)</span></label>
+                        <div className="flex gap-3 items-start">
+                            <div className="w-24 h-24 rounded-xl border overflow-hidden flex-shrink-0 bg-slate-50 flex items-center justify-center" style={{ borderColor: '#f0dde3' }}>
+                                {product.image2
+                                    ? <img src={product.image2} alt="preview2" className="w-full h-full object-cover" onError={e => e.target.style.display='none'} />
+                                    : <Upload size={20} className="text-slate-300" />
+                                }
+                            </div>
+                            <div className="flex-1 space-y-2">
+                                <input type="file" accept="image/*" ref={fileRef2} onChange={handleImageFile2} className="hidden" />
+                                <button onClick={() => fileRef2.current.click()}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-sm font-bold transition-colors hover:bg-pink-50 w-full justify-center"
+                                    style={{ borderColor: PINK, color: PINK }}>
+                                    <Upload size={15} /> Subir segunda imagen
+                                </button>
+                                <input type="text" value={product.image2 && !product.image2.startsWith('data:') ? product.image2 : ''}
+                                    onChange={e => update('image2', e.target.value)}
+                                    placeholder="O pega una URL: https://..."
+                                    className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
                             </div>
                         </div>
                     </div>

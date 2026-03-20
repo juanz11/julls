@@ -15,6 +15,7 @@ const DEFAULT_PRODUCTS = [
         desc: 'Galleta rellena de chocolate y avellanas. Experiencia New York en cada mordida.',
         price: 4.80,
         image: '/313790.jpg',
+        image2: '/313792.jpg',
         weight: '150g / 6 unid.',
         shelf: '90 días',
         flavors: ['Chocolate Negro', 'Chocolate con Leche', 'Chocolate Blanco'],
@@ -26,6 +27,7 @@ const DEFAULT_PRODUCTS = [
         desc: 'Masa Red Velvet con centro cremoso. Ideal para regalo o consumo gourmet.',
         price: 5.50,
         image: '/313792.jpg',
+        image2: '/313794.jpg',
         weight: '150g / 6 unid.',
         shelf: '90 días',
         flavors: ['Crema Vainilla', 'Crema Fresa', 'Crema Limón'],
@@ -37,6 +39,7 @@ const DEFAULT_PRODUCTS = [
         desc: 'Sin relleno. Alta rotación, empaque snack. Perfectas para compartir.',
         price: 1.90,
         image: '/313794.jpg',
+        image2: '/313790.jpg',
         weight: 'Stand-up Pouch',
         shelf: '90 días',
         flavors: ['Clásica', 'Canela', 'Cacao'],
@@ -250,8 +253,13 @@ const JullsApp = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {products.map(p => (
                                 <div key={p.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border" style={{ borderColor: '#f0dde3' }}>
-                                    <div className="h-48 overflow-hidden">
-                                        <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                                    <div className="h-48 overflow-hidden relative group">
+                                        <img src={p.image} alt={p.name}
+                                            className="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:opacity-0 group-hover:scale-105" />
+                                        {p.image2 && (
+                                            <img src={p.image2} alt={p.name}
+                                                className="absolute inset-0 w-full h-full object-cover transition-all duration-500 opacity-0 scale-105 group-hover:opacity-100 group-hover:scale-100" />
+                                        )}
                                     </div>
                                     <div className="p-5">
                                         <span className="text-[10px] font-bold text-white px-2 py-1 rounded-md" style={{ backgroundColor: PINK }}>{p.tag}</span>
@@ -285,8 +293,20 @@ const JullsApp = () => {
                     <div className="space-y-6">
                         {products.map(p => (
                             <div key={p.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border flex flex-col md:flex-row" style={{ borderColor: '#f0dde3' }}>
-                                <div className="md:w-56 h-48 md:h-auto overflow-hidden flex-shrink-0">
-                                    <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                                <div className="md:w-56 h-48 md:h-auto overflow-hidden flex-shrink-0 relative group">
+                                    <img src={p.image} alt={p.name}
+                                        className="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:opacity-0 group-hover:scale-105" />
+                                    {p.image2 && (
+                                        <img src={p.image2} alt={p.name}
+                                            className="absolute inset-0 w-full h-full object-cover transition-all duration-500 opacity-0 scale-105 group-hover:opacity-100 group-hover:scale-100" />
+                                    )}
+                                    {/* Miniaturas */}
+                                    {p.image2 && (
+                                        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 z-10">
+                                            <span className="w-2 h-2 rounded-full bg-white opacity-60 group-hover:opacity-30 transition-opacity" />
+                                            <span className="w-2 h-2 rounded-full bg-white opacity-30 group-hover:opacity-80 transition-opacity" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="p-6 flex flex-col justify-between flex-1">
                                     <div>
