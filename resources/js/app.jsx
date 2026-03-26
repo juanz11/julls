@@ -6,7 +6,8 @@ import { createRoot } from 'react-dom/client';
 import { ShoppingCart, Plus, Minus, X, ChevronRight, CheckCircle2, Package } from 'lucide-react';
 
 const STORAGE_KEY = 'julls_products';
-const BANNER_KEY = 'julls_banner';
+const CLIENTS_KEY = 'julls_clients';
+const MIN_QTY = 12;
 
 const DEFAULT_PRODUCTS = [
     {
@@ -58,24 +59,25 @@ const JullsApp = () => {
             return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
         } catch { return DEFAULT_PRODUCTS; }
     });
-    const [banner, setBanner] = useState(() => {
-        try {
-            const saved = localStorage.getItem(BANNER_KEY);
-            return saved ? JSON.parse(saved) : {
-                imagePc: '/313790.jpg',
-                imageMobile: '/313794.jpg',
-                title: '-15% EN TODAS\nLAS GALLETAS',
-                subtitle: 'Hasta el 31 de marzo · Solo pedidos online',
-                badge: 'GALLETAS15',
-                badgeLabel: 'CÓDIGO:',
-            };
-        } catch { return { imagePc: '/313790.jpg', imageMobile: '/313794.jpg', title: '-15% EN TODAS\nLAS GALLETAS', subtitle: 'Hasta el 31 de marzo · Solo pedidos online', badge: 'GALLETAS15', badgeLabel: 'CÓDIGO:' }; }
+    const [clients] = useState(() => {
+        try { const s = localStorage.getItem(CLIENTS_KEY); return s ? JSON.parse(s) : []; } catch { return []; }
     });
+    const [selectedClient, setSelectedClient] = useState('');
+    const banner = {
+        imagePc: '/313790.jpg',
+        imageMobile: '/313794.jpg',
+        title: '-15% EN TODAS\nLAS GALLETAS',
+        subtitle: 'Hasta el 31 de marzo · Solo pedidos online',
+        badge: 'GALLETAS15',
+        badgeLabel: 'CÓDIGO:',
+    };
     const [cart, setCart] = useState([]);
     const [cartOpen, setCartOpen] = useState(false);
     const [selectedFlavors, setSelectedFlavors] = useState({});
     const [orderForm, setOrderForm] = useState({ name: '', phone: '', address: '', notes: '' });
     const [checkingOut, setCheckingOut] = useState(false);
+    const [reviewMode, setReviewMode] = useState(false);
+    const [qtyError, setQtyError] = useState('');
 
     // Sincronizar con cambios del admin (mismo navegador)
     useEffect(() => {
@@ -83,8 +85,6 @@ const JullsApp = () => {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) setProducts(JSON.parse(saved));
-                const savedBanner = localStorage.getItem(BANNER_KEY);
-                if (savedBanner) setBanner(JSON.parse(savedBanner));
             } catch {}
         };
         window.addEventListener('storage', onStorage);
@@ -98,24 +98,49 @@ const JullsApp = () => {
         const flavor = selectedFlavors[product.id] || product.flavors[0];
         setCart(prev => {
             const existing = prev.find(i => i.id === product.id && i.flavor === flavor);
-            if (existing) return prev.map(i => i.id === product.id && i.flavor === flavor ? { ...i, qty: i.qty + 1 } : i);
-            return [...prev, { ...product, flavor, qty: 1 }];
+            if (existing) return prev.map(i => i.id === product.id && i.flavor === flavor ? { ...i, qty: i.qty + MIN_QTY } : i);
+            return [...prev, { ...product, flavor, qty: MIN_QTY }];
         });
+        setQtyError('');
     };
 
     const updateQty = (id, flavor, delta) => {
         setCart(prev => prev
-            .map(i => i.id === id && i.flavor === flavor ? { ...i, qty: i.qty + delta } : i)
+            .map(i => {
+                if (i.id === id && i.flavor === flavor) {
+                    const newQty = i.qty + delta;
+                    if (newQty < MIN_QTY && newQty > 0) { setQtyError(`Mínimo ${MIN_QTY} unidades por producto`); return i; }
+                    setQtyError('');
+                    return { ...i, qty: newQty };
+                }
+                return i;
+            })
             .filter(i => i.qty > 0)
         );
     };
 
     const handleOrder = (e) => {
         e.preventDefault();
+        // Guardar pedido con cliente identificado
+        const client = clients.find(c => String(c.id) === String(selectedClient));
+        const order = {
+            id: Date.now(),
+            date: new Date().toLocaleString('es-ES'),
+            client: client || { name: orderForm.name, phone: orderForm.phone, address: orderForm.address },
+            items: cart.map(i => ({ name: i.name, flavor: i.flavor, qty: i.qty, price: i.price })),
+            total: cart.reduce((s, i) => s + i.price * i.qty, 0),
+            notes: orderForm.notes,
+            status: 'pendiente',
+        };
+        try {
+            const prev = JSON.parse(localStorage.getItem('julls_orders') || '[]');
+            localStorage.setItem('julls_orders', JSON.stringify([order, ...prev]));
+        } catch {}
         setCartOpen(false);
         setCart([]);
         setOrderForm({ name: '', phone: '', address: '', notes: '' });
         setCheckingOut(false);
+        setReviewMode(false);
         setView('order-success');
     };
 
@@ -129,7 +154,19 @@ const JullsApp = () => {
                         <img src="/313790.jpg" alt="Julls Logo" className="w-10 h-10 rounded-full object-cover" />
                         <span className="font-black text-lg tracking-tighter" style={{ color: PINK }}>JULLS <span className="text-slate-700">Repostería</span></span>
                     </button>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        {/* Selector de cliente */}
+                        {clients.length > 0 && (
+                            <select
+                                value={selectedClient}
+                                onChange={e => setSelectedClient(e.target.value)}
+                                className="text-sm border rounded-full px-3 py-2 outline-none max-w-[180px] truncate"
+                                style={{ borderColor: '#f0dde3', color: selectedClient ? '#3a2a30' : '#9a7080' }}
+                            >
+                                <option value="">Seleccionar cliente</option>
+                                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                        )}
                         <button
                             onClick={() => setView('catalog')}
                             className="text-sm font-bold px-4 py-2 rounded-full transition-all"
@@ -359,10 +396,13 @@ const JullsApp = () => {
                                                 </button>
                                             ))}
                                         </div>
+                                        {clients.length > 0 && !selectedClient && (
+                                            <p className="text-xs text-amber-600 font-medium mb-2">⚠ Selecciona un cliente en el menú superior</p>
+                                        )}
                                         <button
-                                            onClick={() => { addToCart(p); setCartOpen(true); }}
+                                            onClick={() => { if (clients.length > 0 && !selectedClient) return; addToCart(p); setCartOpen(true); }}
                                             className="flex items-center gap-2 px-5 py-2 rounded-full font-bold text-white transition-all hover:opacity-90"
-                                            style={{ backgroundColor: PINK }}
+                                            style={{ backgroundColor: clients.length > 0 && !selectedClient ? '#ccc' : PINK, cursor: clients.length > 0 && !selectedClient ? 'not-allowed' : 'pointer' }}
                                         >
                                             <ShoppingCart size={16} /> Agregar al carrito
                                         </button>
@@ -486,11 +526,13 @@ const JullsApp = () => {
             {/* CART DRAWER */}
             {cartOpen && (
                 <div className="fixed inset-0 z-50 flex">
-                    <div className="flex-1 bg-black/40" onClick={() => { setCartOpen(false); setCheckingOut(false); }} />
-                    <div className="w-full max-w-md bg-white h-full overflow-y-auto flex flex-col shadow-2xl">
+                    <div className="flex-1 bg-black/40" onClick={() => { setCartOpen(false); setCheckingOut(false); setReviewMode(false); }} />
+                    <div className="w-full max-w-lg bg-white h-full overflow-y-auto flex flex-col shadow-2xl">
                         <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: '#f0dde3' }}>
-                            <h3 className="text-xl font-black text-slate-900">Tu Carrito</h3>
-                            <button onClick={() => { setCartOpen(false); setCheckingOut(false); }}>
+                            <h3 className="text-xl font-black text-slate-900">
+                                {reviewMode ? 'Revisar pedido' : 'Tu Carrito'}
+                            </h3>
+                            <button onClick={() => { setCartOpen(false); setCheckingOut(false); setReviewMode(false); }}>
                                 <X className="w-5 h-5 text-slate-400" />
                             </button>
                         </div>
@@ -500,23 +542,100 @@ const JullsApp = () => {
                                 <ShoppingCart className="w-12 h-12 opacity-30" />
                                 <p className="font-medium">Tu carrito está vacío</p>
                             </div>
+
+                        ) : reviewMode ? (
+                            /* ── TABLA DE REVISIÓN ── */
+                            <div className="flex-1 flex flex-col p-6">
+                                {selectedClient && (() => {
+                                    const cl = clients.find(c => String(c.id) === String(selectedClient));
+                                    return cl ? (
+                                        <div className="mb-4 p-3 rounded-xl border text-sm" style={{ borderColor: '#f0dde3', backgroundColor: '#fdf5f7' }}>
+                                            <p className="font-bold text-slate-800">{cl.name}</p>
+                                            <p className="text-slate-500">{cl.code} {cl.phone && `· ${cl.phone}`}</p>
+                                            {cl.address && <p className="text-slate-500">{cl.address}</p>}
+                                        </div>
+                                    ) : null;
+                                })()}
+                                <div className="overflow-x-auto rounded-xl border" style={{ borderColor: '#f0dde3' }}>
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr style={{ backgroundColor: '#fdf5f7' }}>
+                                                <th className="text-left px-3 py-2 font-bold text-slate-600">Producto</th>
+                                                <th className="text-center px-3 py-2 font-bold text-slate-600">Sabor</th>
+                                                <th className="text-center px-3 py-2 font-bold text-slate-600">Cant.</th>
+                                                <th className="text-right px-3 py-2 font-bold text-slate-600">Subtotal</th>
+                                                <th className="px-2 py-2"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {cart.map((item, i) => (
+                                                <tr key={i} className="border-t" style={{ borderColor: '#f0dde3' }}>
+                                                    <td className="px-3 py-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <img src={item.image} alt={item.name} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
+                                                            <span className="font-semibold text-slate-800 truncate max-w-[100px]">{item.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-center text-slate-500">{item.flavor}</td>
+                                                    <td className="px-3 py-2 text-center">
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <button onClick={() => updateQty(item.id, item.flavor, -MIN_QTY)}
+                                                                className="w-6 h-6 rounded-full border flex items-center justify-center text-xs" style={{ borderColor: PINK, color: PINK }}>−</button>
+                                                            <span className="w-8 text-center font-bold">{item.qty}</span>
+                                                            <button onClick={() => updateQty(item.id, item.flavor, MIN_QTY)}
+                                                                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs" style={{ backgroundColor: PINK }}>+</button>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right font-bold" style={{ color: PINK }}>${(item.price * item.qty).toFixed(2)}</td>
+                                                    <td className="px-2 py-2">
+                                                        <button onClick={() => setCart(prev => prev.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600">
+                                                            <X size={14} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="border-t font-black" style={{ borderColor: '#f0dde3' }}>
+                                                <td colSpan={3} className="px-3 py-3 text-slate-700">TOTAL</td>
+                                                <td className="px-3 py-3 text-right text-lg" style={{ color: PINK }}>${totalPrice.toFixed(2)}</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                {qtyError && <p className="text-red-500 text-xs mt-2">{qtyError}</p>}
+                                <div className="mt-auto pt-4 flex gap-2">
+                                    <button onClick={() => setReviewMode(false)} className="flex-1 py-3 rounded-full font-bold border-2 text-slate-600" style={{ borderColor: '#f0dde3' }}>
+                                        ← Volver
+                                    </button>
+                                    <button onClick={() => { setReviewMode(false); setCheckingOut(true); }}
+                                        className="flex-1 py-3 rounded-full font-bold text-white" style={{ backgroundColor: PINK }}>
+                                        Confirmar pedido →
+                                    </button>
+                                </div>
+                            </div>
+
                         ) : !checkingOut ? (
+                            /* ── LISTA DEL CARRITO ── */
                             <>
                                 <div className="flex-1 p-6 space-y-4">
+                                    {qtyError && <p className="text-red-500 text-xs font-medium bg-red-50 px-3 py-2 rounded-xl">{qtyError}</p>}
                                     {cart.map((item, i) => (
                                         <div key={i} className="flex items-center gap-4 p-3 rounded-xl border" style={{ borderColor: '#f0dde3' }}>
                                             <img src={item.image} alt={item.name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-bold text-slate-800 text-sm truncate">{item.name}</p>
                                                 <p className="text-xs text-slate-400">{item.flavor}</p>
+                                                <p className="text-xs text-slate-400">mín. {MIN_QTY} uds.</p>
                                                 <p className="text-sm font-black mt-1" style={{ color: PINK }}>${(item.price * item.qty).toFixed(2)}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <button onClick={() => updateQty(item.id, item.flavor, -1)} className="w-7 h-7 rounded-full border flex items-center justify-center" style={{ borderColor: PINK }}>
+                                                <button onClick={() => updateQty(item.id, item.flavor, -MIN_QTY)} className="w-7 h-7 rounded-full border flex items-center justify-center" style={{ borderColor: PINK }}>
                                                     <Minus size={12} style={{ color: PINK }} />
                                                 </button>
-                                                <span className="w-5 text-center font-bold text-sm">{item.qty}</span>
-                                                <button onClick={() => updateQty(item.id, item.flavor, 1)} className="w-7 h-7 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: PINK }}>
+                                                <span className="w-6 text-center font-bold text-sm">{item.qty}</span>
+                                                <button onClick={() => updateQty(item.id, item.flavor, MIN_QTY)} className="w-7 h-7 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: PINK }}>
                                                     <Plus size={12} />
                                                 </button>
                                             </div>
@@ -529,15 +648,17 @@ const JullsApp = () => {
                                         <span className="text-2xl font-black" style={{ color: PINK }}>${totalPrice.toFixed(2)}</span>
                                     </div>
                                     <button
-                                        onClick={() => setCheckingOut(true)}
+                                        onClick={() => setReviewMode(true)}
                                         className="w-full py-3 rounded-full font-bold text-white text-center"
                                         style={{ backgroundColor: PINK }}
                                     >
-                                        Proceder al Pedido
+                                        Revisar pedido →
                                     </button>
                                 </div>
                             </>
+
                         ) : (
+                            /* ── FORMULARIO DE DATOS ── */
                             <form onSubmit={handleOrder} className="flex-1 flex flex-col p-6 gap-4">
                                 <h4 className="font-black text-slate-800 text-lg">Datos de Entrega</h4>
                                 {[
@@ -547,26 +668,16 @@ const JullsApp = () => {
                                 ].map(f => (
                                     <div key={f.key}>
                                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">{f.label}</label>
-                                        <input
-                                            type={f.type}
-                                            required
-                                            placeholder={f.placeholder}
-                                            value={orderForm[f.key]}
+                                        <input type={f.type} required placeholder={f.placeholder} value={orderForm[f.key]}
                                             onChange={e => setOrderForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                                            className="w-full border rounded-xl px-4 py-2 text-sm outline-none focus:ring-2"
-                                            style={{ borderColor: '#f0dde3', focusRingColor: PINK }}
-                                        />
+                                            className="w-full border rounded-xl px-4 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
                                     </div>
                                 ))}
                                 <div>
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Notas (opcional)</label>
-                                    <textarea
-                                        placeholder="Instrucciones especiales..."
-                                        value={orderForm.notes}
+                                    <textarea placeholder="Instrucciones especiales..." value={orderForm.notes}
                                         onChange={e => setOrderForm(prev => ({ ...prev, notes: e.target.value }))}
-                                        className="w-full border rounded-xl px-4 py-2 text-sm outline-none resize-none h-20"
-                                        style={{ borderColor: '#f0dde3' }}
-                                    />
+                                        className="w-full border rounded-xl px-4 py-2 text-sm outline-none resize-none h-20" style={{ borderColor: '#f0dde3' }} />
                                 </div>
                                 <div className="mt-auto pt-4 border-t" style={{ borderColor: '#f0dde3' }}>
                                     <div className="flex justify-between mb-3">
