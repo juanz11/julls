@@ -7,6 +7,16 @@ import { Plus, Trash2, Save, X, ChevronDown, ChevronUp, Upload, LogOut } from 'l
 
 const PINK = '#bf7691';
 const STORAGE_KEY = 'julls_products';
+const BANNER_KEY = 'julls_banner';
+
+const DEFAULT_BANNER = {
+    imagePc: '/313790.jpg',
+    imageMobile: '/313794.jpg',
+    title: '-15% EN TODAS\nLAS GALLETAS',
+    subtitle: 'Hasta el 31 de marzo · Solo pedidos online',
+    badgeLabel: 'CÓDIGO:',
+    badge: 'GALLETAS15',
+};
 const AUTH_KEY = 'julls_admin_auth';
 
 const DEFAULT_PRODUCTS = [
@@ -266,7 +276,15 @@ function AdminApp() {
             return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
         } catch { return DEFAULT_PRODUCTS; }
     });
+    const [banner, setBanner] = useState(() => {
+        try {
+            const saved = localStorage.getItem(BANNER_KEY);
+            return saved ? JSON.parse(saved) : DEFAULT_BANNER;
+        } catch { return DEFAULT_BANNER; }
+    });
     const [saved, setSaved] = useState(false);
+    const bannerPcRef = useRef();
+    const bannerMobileRef = useRef();
 
     if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
 
@@ -274,6 +292,7 @@ function AdminApp() {
 
     const save = () => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+        localStorage.setItem(BANNER_KEY, JSON.stringify(banner));
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
     };
@@ -304,9 +323,92 @@ function AdminApp() {
             </div>
 
             <div className="max-w-3xl mx-auto px-6 py-8 space-y-4">
+                {/* BANNER EDITOR */}
+                <div className="bg-white rounded-2xl border shadow-sm overflow-hidden mb-6" style={{ borderColor: '#f0dde3' }}>
+                    <div className="p-4 border-b flex items-center gap-2" style={{ borderColor: '#f0dde3', backgroundColor: '#fdf5f7' }}>
+                        <span className="text-lg">🖼️</span>
+                        <h2 className="font-black text-slate-800">Banner principal</h2>
+                    </div>
+                    <div className="p-5 space-y-4">
+                        {/* Imágenes */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* PC */}
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Imagen desktop</label>
+                                <div className="flex gap-3 items-start">
+                                    <div className="w-20 h-14 rounded-xl border overflow-hidden flex-shrink-0 bg-slate-50 flex items-center justify-center" style={{ borderColor: '#f0dde3' }}>
+                                        {banner.imagePc
+                                            ? <img src={banner.imagePc} alt="pc" className="w-full h-full object-cover" onError={e => e.target.style.display='none'} />
+                                            : <Upload size={16} className="text-slate-300" />}
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                        <input type="file" accept="image/*" ref={bannerPcRef} className="hidden"
+                                            onChange={e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => setBanner(b => ({ ...b, imagePc: ev.target.result })); r.readAsDataURL(f); }} />
+                                        <button onClick={() => bannerPcRef.current.click()}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs font-bold hover:bg-pink-50 w-full justify-center"
+                                            style={{ borderColor: PINK, color: PINK }}>
+                                            <Upload size={13} /> Subir imagen
+                                        </button>
+                                        <input type="text" value={banner.imagePc.startsWith('data:') ? '' : banner.imagePc}
+                                            onChange={e => setBanner(b => ({ ...b, imagePc: e.target.value }))}
+                                            placeholder="URL de imagen..."
+                                            className="w-full border rounded-xl px-3 py-2 text-xs outline-none" style={{ borderColor: '#f0dde3' }} />
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Mobile */}
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Imagen móvil</label>
+                                <div className="flex gap-3 items-start">
+                                    <div className="w-20 h-14 rounded-xl border overflow-hidden flex-shrink-0 bg-slate-50 flex items-center justify-center" style={{ borderColor: '#f0dde3' }}>
+                                        {banner.imageMobile
+                                            ? <img src={banner.imageMobile} alt="mobile" className="w-full h-full object-cover" onError={e => e.target.style.display='none'} />
+                                            : <Upload size={16} className="text-slate-300" />}
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                        <input type="file" accept="image/*" ref={bannerMobileRef} className="hidden"
+                                            onChange={e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => setBanner(b => ({ ...b, imageMobile: ev.target.result })); r.readAsDataURL(f); }} />
+                                        <button onClick={() => bannerMobileRef.current.click()}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs font-bold hover:bg-pink-50 w-full justify-center"
+                                            style={{ borderColor: PINK, color: PINK }}>
+                                            <Upload size={13} /> Subir imagen
+                                        </button>
+                                        <input type="text" value={banner.imageMobile.startsWith('data:') ? '' : banner.imageMobile}
+                                            onChange={e => setBanner(b => ({ ...b, imageMobile: e.target.value }))}
+                                            placeholder="URL de imagen..."
+                                            className="w-full border rounded-xl px-3 py-2 text-xs outline-none" style={{ borderColor: '#f0dde3' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {/* Textos */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Título <span className="font-normal normal-case text-slate-400">(usa \n para salto de línea)</span></label>
+                                <textarea value={banner.title} rows={2} onChange={e => setBanner(b => ({ ...b, title: e.target.value }))}
+                                    className="w-full border rounded-xl px-3 py-2 text-sm outline-none resize-none" style={{ borderColor: '#f0dde3' }} />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Subtítulo</label>
+                                <input type="text" value={banner.subtitle} onChange={e => setBanner(b => ({ ...b, subtitle: e.target.value }))}
+                                    className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Etiqueta código</label>
+                                <input type="text" value={banner.badgeLabel} onChange={e => setBanner(b => ({ ...b, badgeLabel: e.target.value }))}
+                                    className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Código promocional</label>
+                                <input type="text" value={banner.badge} onChange={e => setBanner(b => ({ ...b, badge: e.target.value }))}
+                                    className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="flex items-center justify-between mb-2">
-                    <h2 className="font-black text-slate-800 text-lg">{products.length} productos</h2>
-                    <div className="flex gap-2">
+                    <h2 className="font-black text-slate-800 text-lg">{products.length} productos</h2>                    <div className="flex gap-2">
                         <button onClick={reset} className="text-xs text-slate-400 hover:text-slate-600 underline">Restaurar defaults</button>
                         <button onClick={addProduct} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-white" style={{ backgroundColor: PINK }}>
                             <Plus size={15} /> Agregar producto

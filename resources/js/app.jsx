@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { ShoppingCart, Plus, Minus, X, ChevronRight, CheckCircle2, Package } from 'lucide-react';
 
 const STORAGE_KEY = 'julls_products';
+const BANNER_KEY = 'julls_banner';
 
 const DEFAULT_PRODUCTS = [
     {
@@ -57,6 +58,19 @@ const JullsApp = () => {
             return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
         } catch { return DEFAULT_PRODUCTS; }
     });
+    const [banner, setBanner] = useState(() => {
+        try {
+            const saved = localStorage.getItem(BANNER_KEY);
+            return saved ? JSON.parse(saved) : {
+                imagePc: '/313790.jpg',
+                imageMobile: '/313794.jpg',
+                title: '-15% EN TODAS\nLAS GALLETAS',
+                subtitle: 'Hasta el 31 de marzo · Solo pedidos online',
+                badge: 'GALLETAS15',
+                badgeLabel: 'CÓDIGO:',
+            };
+        } catch { return { imagePc: '/313790.jpg', imageMobile: '/313794.jpg', title: '-15% EN TODAS\nLAS GALLETAS', subtitle: 'Hasta el 31 de marzo · Solo pedidos online', badge: 'GALLETAS15', badgeLabel: 'CÓDIGO:' }; }
+    });
     const [cart, setCart] = useState([]);
     const [cartOpen, setCartOpen] = useState(false);
     const [selectedFlavors, setSelectedFlavors] = useState({});
@@ -69,6 +83,8 @@ const JullsApp = () => {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) setProducts(JSON.parse(saved));
+                const savedBanner = localStorage.getItem(BANNER_KEY);
+                if (savedBanner) setBanner(JSON.parse(savedBanner));
             } catch {}
         };
         window.addEventListener('storage', onStorage);
@@ -166,10 +182,10 @@ const JullsApp = () => {
             {view === 'home' && (
             <div className="relative w-full overflow-hidden" style={{ minHeight: 500 }}>
                 <picture>
-                    <source media="(max-width: 767px)" srcSet="/313794.jpg" />
-                    <source media="(min-width: 768px)" srcSet="/313790.jpg" />
+                    <source media="(max-width: 767px)" srcSet={banner.imageMobile} />
+                    <source media="(min-width: 768px)" srcSet={banner.imagePc} />
                     <img
-                        src="/313790.jpg"
+                        src={banner.imagePc}
                         alt="Banner galletas"
                         className="absolute inset-0 w-full h-full object-cover"
                         style={{ filter: 'brightness(0.55)' }}
@@ -180,14 +196,16 @@ const JullsApp = () => {
                     <div className="flex-1">
                         <p className="text-white text-sm font-bold uppercase tracking-widest mb-2 opacity-80">Edición Especial</p>
                         <h2 className="text-white text-5xl md:text-7xl font-black leading-tight drop-shadow">
-                            -15% EN TODAS<br />LAS GALLETAS
+                            {banner.title.split('\n').map((line, i) => <span key={i}>{line}{i < banner.title.split('\n').length - 1 && <br />}</span>)}
                         </h2>
-                        <p className="text-white/80 text-base mt-3">Hasta el 31 de marzo · Solo pedidos online</p>
+                        <p className="text-white/80 text-base mt-3">{banner.subtitle}</p>
                     </div>
                     <div className="flex flex-col items-start md:items-end gap-3">
-                        <div className="px-5 py-2 rounded-full font-black text-white text-base tracking-wide" style={{ backgroundColor: PINK }}>
-                            CÓDIGO: <span className="uppercase">GALLETAS15</span>
-                        </div>
+                        {banner.badge && (
+                            <div className="px-5 py-2 rounded-full font-black text-white text-base tracking-wide" style={{ backgroundColor: PINK }}>
+                                {banner.badgeLabel} <span className="uppercase">{banner.badge}</span>
+                            </div>
+                        )}
                         <button
                             onClick={() => setView('catalog')}
                             className="px-6 py-2 rounded-full font-bold text-sm border-2 border-white text-white hover:bg-white transition-all"
