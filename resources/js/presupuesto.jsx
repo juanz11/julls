@@ -1,7 +1,7 @@
 import './bootstrap';
 import '../css/app.css';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BarChart3, ChevronLeft, ChevronRight, CheckCircle2, Pencil, Check, X, Upload } from 'lucide-react';
 
@@ -31,7 +31,6 @@ const Editable = ({ value, onChange, editing, className = '', multiline = false,
 };
 
 const AUTH_KEY = 'julls_admin_auth';
-const PRESUPUESTO_KEY = 'julls_presupuesto';
 
 const DEFAULT_STATE = {
     p1: {
@@ -78,29 +77,51 @@ const DEFAULT_STATE = {
     footer: '© 2026 Julls Repostería, C.A. • Valencia, Venezuela • Estrategia de Crecimiento',
 };
 
-const loadSaved = () => {
-    try { const s = localStorage.getItem(PRESUPUESTO_KEY); return s ? { ...DEFAULT_STATE, ...JSON.parse(s) } : DEFAULT_STATE; } catch { return DEFAULT_STATE; }
-};
-
 const PresupuestoApp = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const [editing, setEditing] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [loading, setLoading] = useState(true);
     const isAdmin = sessionStorage.getItem(AUTH_KEY) === '1';
 
-    const initial = loadSaved();
-    const [p1, setP1] = useState(initial.p1);
-    const [p2, setP2] = useState(initial.p2);
-    const [p3, setP3] = useState(initial.p3);
-    const [pageMeta, setPageMeta] = useState(initial.pageMeta);
-    const [footer, setFooter] = useState(initial.footer);
+    const [p1, setP1] = useState(DEFAULT_STATE.p1);
+    const [p2, setP2] = useState(DEFAULT_STATE.p2);
+    const [p3, setP3] = useState(DEFAULT_STATE.p3);
+    const [pageMeta, setPageMeta] = useState(DEFAULT_STATE.pageMeta);
+    const [footer, setFooter] = useState(DEFAULT_STATE.footer);
     const imgRef = useRef();
 
-    const saveAll = () => {
-        localStorage.setItem(PRESUPUESTO_KEY, JSON.stringify({ p1, p2, p3, pageMeta, footer }));
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+    // Cargar desde servidor al montar
+    useEffect(() => {
+        fetch('/api/presupuesto')
+            .then(r => r.json())
+            .then(data => {
+                if (data) {
+                    if (data.p1) setP1(data.p1);
+                    if (data.p2) setP2(data.p2);
+                    if (data.p3) setP3(data.p3);
+                    if (data.pageMeta) setPageMeta(data.pageMeta);
+                    if (data.footer) setFooter(data.footer);
+                }
+            })
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    }, []);
+
+    const saveAll = async () => {
+        try {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            await fetch('/api/presupuesto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf || '' },
+                body: JSON.stringify({ data: { p1, p2, p3, pageMeta, footer } }),
+            });
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+        } catch {}
     };
+
+    if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: LIGHT }}><div className="text-slate-400 font-medium">Cargando...</div></div>;
 
     const updateP2Card = (i, field, val) => {
         setP2(prev => ({ ...prev, cards: prev.cards.map((c, idx) => idx === i ? { ...c, [field]: val } : c) }));
