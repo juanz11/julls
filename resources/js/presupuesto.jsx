@@ -58,6 +58,7 @@ const DEFAULT_STATE = {
         ],
     },
     p3: {
+        headers: ['PRODUCTO', 'COSTO DISTRIBUIDOR', 'PVP SUGERIDO', 'MARGEN RETAIL (%)'],
         rows: [
             { name: 'Choco Crunch (150g)', dist: '$3.00', pvp: '$4.80', margin: '37.5%' },
             { name: 'Velvet Cream (150g)', dist: '$3.50', pvp: '$5.50', margin: '36.3%' },
@@ -239,10 +240,10 @@ const PresupuestoApp = () => {
                         <table className="w-full text-left bg-white">
                             <thead className="bg-slate-50 border-b border-slate-200">
                                 <tr>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900">PRODUCTO</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900">COSTO DISTRIBUIDOR</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900">PVP SUGERIDO</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900 text-center">MARGEN RETAIL (%)</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-slate-900"><Editable value={p3.headers[0]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 0 ? v : h) }))} editing={editing} /></th>
+                                    <th className="px-6 py-4 text-sm font-bold text-slate-900"><Editable value={p3.headers[1]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 1 ? v : h) }))} editing={editing} /></th>
+                                    <th className="px-6 py-4 text-sm font-bold text-slate-900"><Editable value={p3.headers[2]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 2 ? v : h) }))} editing={editing} /></th>
+                                    <th className="px-6 py-4 text-sm font-bold text-slate-900 text-center"><Editable value={p3.headers[3]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 3 ? v : h) }))} editing={editing} /></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">

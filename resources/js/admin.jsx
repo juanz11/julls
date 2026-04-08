@@ -3,7 +3,7 @@ import '../css/app.css';
 
 import React, { useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Trash2, Save, X, ChevronDown, ChevronUp, Upload, LogOut, Users, Package, ShoppingBag, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Plus, Trash2, Save, X, ChevronDown, ChevronUp, Upload, LogOut, Users, Package, ShoppingBag, CheckCircle, Clock, XCircle, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PINK = '#bf7691';
 const STORAGE_KEY = 'julls_products';
@@ -387,10 +387,154 @@ function OrdersPanel() {
     );
 }
 
+// ── Panel de Presupuesto ───────────────────────────────────────────────────
+const BUDGET_KEY = 'julls_budget';
+
+function BudgetPanel({ products }) {
+    const [rows, setRows] = useState(() => {
+        try { return JSON.parse(localStorage.getItem(BUDGET_KEY) || '{}'); } catch { return {}; }
+    });
+    const [headers, setHeaders] = useState(() => {
+        try {
+            const h = JSON.parse(localStorage.getItem(BUDGET_KEY + '_headers') || 'null');
+            return h || { col0: 'PRODUCTO', col1: 'COSTO DISTRIBUIDOR', col2: 'PVP SUGERIDO', col3: 'MARGEN RETAIL (%)' };
+        } catch { return { col0: 'PRODUCTO', col1: 'COSTO DISTRIBUIDOR', col2: 'PVP SUGERIDO', col3: 'MARGEN RETAIL (%)' }; }
+    });
+    const [saved, setSaved] = useState(false);
+    const tableRef = useRef();
+
+    const get = (id, field, fallback = '') => rows[id]?.[field] ?? fallback;
+    const set = (id, field, value) => setRows(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+
+    const margin = (cost, pvp) => {
+        const c = parseFloat(cost), p = parseFloat(pvp);
+        if (!c || !p || p === 0) return '—';
+        return (((p - c) / p) * 100).toFixed(1) + '%';
+    };
+
+    const save = () => {
+        localStorage.setItem(BUDGET_KEY, JSON.stringify(rows));
+        localStorage.setItem(BUDGET_KEY + '_headers', JSON.stringify(headers));
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    };
+
+    const scroll = (dir) => tableRef.current?.scrollBy({ left: dir * 150, behavior: 'smooth' });
+
+    return (
+        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: '#f0dde3' }}>
+            <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#f0dde3', backgroundColor: '#fdf5f7' }}>
+                <div className="flex items-center gap-2">
+                    <DollarSign size={18} style={{ color: PINK }} />
+                    <h2 className="font-black text-slate-800">Presupuesto / Precios</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                    {/* Flechas siempre visibles */}
+                    <button onClick={() => scroll(-1)} className="p-2 rounded-lg border hover:bg-pink-50 transition-colors" style={{ borderColor: '#f0dde3' }} title="Desplazar izquierda">
+                        <ChevronLeft size={16} className="text-slate-500" />
+                    </button>
+                    <button onClick={() => scroll(1)} className="p-2 rounded-lg border hover:bg-pink-50 transition-colors" style={{ borderColor: '#f0dde3' }} title="Desplazar derecha">
+                        <ChevronRight size={16} className="text-slate-500" />
+                    </button>
+                    <button onClick={save} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-white transition-all"
+                        style={{ backgroundColor: saved ? '#22c55e' : PINK }}>
+                        <Save size={14} /> {saved ? '¡Guardado!' : 'Guardar'}
+                    </button>
+                </div>
+            </div>
+
+            {/* Indicador de scroll */}
+            <p className="text-xs text-slate-400 px-4 pt-2 pb-0">← Desliza la tabla para ver todas las columnas →</p>
+
+            <div ref={tableRef} style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin', scrollbarColor: `${PINK} #f0dde3` }}>
+                <table className="text-sm" style={{ minWidth: 620, width: '100%' }}>
+                    <thead>
+                        <tr style={{ backgroundColor: '#fdf5f7' }}>
+                            {['col0', 'col1', 'col2', 'col3'].map((col, i) => (
+                                <th key={col} style={{ padding: '10px 16px', textAlign: i === 0 ? 'left' : 'center', whiteSpace: 'nowrap' }}>
+                                    <input
+                                        value={headers[col]}
+                                        onChange={e => setHeaders(h => ({ ...h, [col]: e.target.value }))}
+                                        style={{
+                                            display: 'block',
+                                            width: i === 0 ? 130 : 160,
+                                            background: '#fff',
+                                            border: `2px solid ${PINK}`,
+                                            borderRadius: 8,
+                                            padding: '4px 8px',
+                                            fontWeight: 700,
+                                            color: '#475569',
+                                            textTransform: 'uppercase',
+                                            fontSize: '0.7rem',
+                                            letterSpacing: '0.05em',
+                                            textAlign: i === 0 ? 'left' : 'center',
+                                            outline: 'none',
+                                            cursor: 'text',
+                                        }}
+                                    />
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {products.map((p, i) => {
+                            const cost = get(p.id, 'cost', p.price);
+                            const pvp = get(p.id, 'pvp', (p.price * 1.375).toFixed(2));
+                            const m = margin(cost, pvp);
+                            const mNum = parseFloat(m);
+                            const mColor = isNaN(mNum) ? '#94a3b8' : mNum >= 30 ? '#15803d' : mNum >= 20 ? '#c2410c' : '#b91c1c';
+                            return (
+                                <tr key={p.id} style={{ borderTop: '1px solid #f0dde3', backgroundColor: i % 2 === 0 ? '#fff' : '#fdf5f7' }}>
+                                    <td style={{ padding: '12px 16px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            {p.image && <img src={p.image} alt={p.name} style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} onError={e => e.target.style.display='none'} />}
+                                            <div>
+                                                <p style={{ fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap' }}>{p.name}</p>
+                                                <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.tag}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>$</span>
+                                            <input type="number" step="0.01" min="0" value={cost}
+                                                onChange={e => set(p.id, 'cost', e.target.value)}
+                                                style={{ width: 90, border: '1px solid #f0dde3', borderRadius: 8, padding: '4px 8px', textAlign: 'center', fontSize: '0.875rem', fontWeight: 700, outline: 'none' }} />
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>$</span>
+                                            <input type="number" step="0.01" min="0" value={pvp}
+                                                onChange={e => set(p.id, 'pvp', e.target.value)}
+                                                style={{ width: 90, border: '1px solid #f0dde3', borderRadius: 8, padding: '4px 8px', textAlign: 'center', fontSize: '0.875rem', fontWeight: 700, outline: 'none' }} />
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                        <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: 999, fontSize: '0.875rem', fontWeight: 900, backgroundColor: mColor + '20', color: mColor }}>
+                                            {m}
+                                        </span>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            {products.length === 0 && <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.875rem', padding: '2rem' }}>Agrega productos primero.</p>}
+
+            <div className="p-4 border-t text-xs text-slate-400" style={{ borderColor: '#f0dde3' }}>
+                Haz clic en cualquier título para editarlo · Margen = (PVP − Costo) / PVP × 100 · Verde ≥ 30%, naranja ≥ 20%, rojo &lt; 20%
+            </div>
+        </div>
+    );
+}
+
 // ── App principal ──────────────────────────────────────────────────────────
 function AdminApp() {
     const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
-    const [tab, setTab] = useState('products'); // 'products' | 'clients' | 'orders'
+    const [tab, setTab] = useState('products'); // 'products' | 'clients' | 'orders' | 'budget'
     const [products, setProducts] = useState(() => {
         try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : DEFAULT_PRODUCTS; } catch { return DEFAULT_PRODUCTS; }
     });
@@ -436,7 +580,7 @@ function AdminApp() {
                 </div>
                 {/* Tabs */}
                 <div className="max-w-3xl mx-auto px-6 flex gap-1 pb-3">
-                    {[['products', <Package size={15} />, 'Productos'], ['clients', <Users size={15} />, 'Clientes'], ['orders', <ShoppingBag size={15} />, 'Pedidos']].map(([key, icon, label]) => (
+                    {[['products', <Package size={15} />, 'Productos'], ['clients', <Users size={15} />, 'Clientes'], ['orders', <ShoppingBag size={15} />, 'Pedidos'], ['budget', <DollarSign size={15} />, 'Presupuesto']].map(([key, icon, label]) => (
                         <button key={key} onClick={() => setTab(key)}
                             className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all"
                             style={{ backgroundColor: tab === key ? PINK : 'transparent', color: tab === key ? '#fff' : PINK, border: `2px solid ${PINK}` }}>
@@ -450,6 +594,8 @@ function AdminApp() {
                 {tab === 'clients' && <ClientsPanel clients={clients} setClients={setClients} />}
 
                 {tab === 'orders' && <OrdersPanel />}
+
+                {tab === 'budget' && <BudgetPanel products={products} />}
 
                 {tab === 'products' && (
                     <>
