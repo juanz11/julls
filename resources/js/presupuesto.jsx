@@ -179,7 +179,15 @@ const PresupuestoApp = () => {
             content: (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-700">
                     {p2.cards.map((item, i) => (
-                        <div key={i} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                        <div key={i} className="relative bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                            {i > 0 && (
+                                <div className="absolute top-0 right-0 overflow-hidden rounded-tr-2xl" style={{ width: 100, height: 100, pointerEvents: 'none' }}>
+                                    <div className="absolute top-[22px] right-[-28px] rotate-45 text-white text-[11px] font-black uppercase tracking-wide text-center"
+                                        style={{ backgroundColor: '#dc2626', width: 110, padding: '5px 0' }}>
+                                        Próximamente
+                                    </div>
+                                </div>
+                            )}
                             <div>
                                 <span className="text-[10px] font-bold text-white px-2 py-1 rounded-md mb-4 inline-block tracking-tighter" style={{ backgroundColor: item.tagBg }}>
                                     <Editable value={item.tag} onChange={v => updateP2Card(i, 'tag', v)} editing={editing} />
