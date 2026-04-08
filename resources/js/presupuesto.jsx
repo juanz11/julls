@@ -165,9 +165,9 @@ const PresupuestoApp = () => {
                     </div>
                     <div className="md:w-1/2 relative">
                         <div className="rounded-3xl p-8 border-2 shadow-2xl overflow-hidden" style={{ backgroundColor: '#fdf5f7', borderColor: '#f0dde3' }}>
-                            <div className="flex items-center justify-center mb-4" style={{ minHeight: 260 }}>
+                            <div className="flex items-center justify-center" style={{ minHeight: 0 }}>
                                 <div className="text-center">
-                                    <div className="relative mx-auto mb-4 flex items-center justify-center" style={{ width: 400, height: 400 }}>
+                                    <div className="relative mx-auto mb-1 flex items-center justify-center" style={{ width: 400, height: 300 }}>
                                         <img src={p1.productImage} alt="Producto"
                                             style={{
                                                 maxWidth: '100%',
