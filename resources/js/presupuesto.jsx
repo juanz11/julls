@@ -48,7 +48,7 @@ const DEFAULT_STATE = {
         productSlogan: 'ORIGINAL RECIPE',
         productWeight: '150g / 6 Unid.',
         productMargin: '37.5%',
-        productImage: '/313790.jpg',
+        productImage: '/logo.jpg',
     },
     p2: {
         cards: [
@@ -98,7 +98,12 @@ const PresupuestoApp = () => {
             .then(r => r.json())
             .then(data => {
                 if (data) {
-                    if (data.p1) setP1(data.p1);
+                    if (data.p1) {
+                        // Usar imagen guardada, o logo.jpg si es base64 o antigua
+                        const img = data.p1.productImage;
+                        const clean = img && !img.startsWith('data:') ? img : '/logo.jpg';
+                        setP1({ ...data.p1, productImage: clean });
+                    }
                     if (data.p2) setP2(data.p2);
                     if (data.p3) setP3(data.p3);
                     if (data.pageMeta) setPageMeta(data.pageMeta);
@@ -112,10 +117,12 @@ const PresupuestoApp = () => {
     const saveAll = async () => {
         try {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            // Guardar con la imagen actual (ya es una URL del servidor, no base64)
+            const p1ToSave = { ...p1, productImage: p1.productImage.startsWith('data:') ? '/logo.jpg' : p1.productImage };
             await fetch('/api/presupuesto', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf || '' },
-                body: JSON.stringify({ data: { p1, p2, p3, pageMeta, footer } }),
+                body: JSON.stringify({ data: { p1: p1ToSave, p2, p3, pageMeta, footer } }),
             });
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
@@ -158,18 +165,57 @@ const PresupuestoApp = () => {
                     </div>
                     <div className="md:w-1/2 relative">
                         <div className="rounded-3xl p-8 border-2 shadow-2xl overflow-hidden" style={{ backgroundColor: '#fdf5f7', borderColor: '#f0dde3' }}>
-                            <div className="aspect-square bg-white rounded-2xl flex items-center justify-center shadow-inner mb-4 overflow-hidden">
-                                <div className="text-center px-6">
-                                    <div className="relative w-40 h-40 mx-auto mb-4">
-                                        <img src={p1.productImage} alt="Producto" className="w-40 h-40 rounded-full object-cover shadow-lg" />
+                            <div className="flex items-center justify-center mb-4" style={{ minHeight: 260 }}>
+                                <div className="text-center">
+                                    <div className="relative mx-auto mb-4 flex items-center justify-center" style={{ width: 400, height: 400 }}>
+                                        <img src={p1.productImage} alt="Producto"
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '100%',
+                                                objectFit: 'contain',
+                                                mixBlendMode: 'multiply',
+                                                filter: 'contrast(1.1) saturate(1.1)',
+                                                transition: 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1), filter 0.4s ease, drop-shadow(0 0 0px transparent)',
+                                                cursor: 'pointer',
+                                            }}
+                                            onMouseEnter={e => {
+                                                e.currentTarget.style.transform = 'scale(1.12) rotate(-2deg)';
+                                                e.currentTarget.style.filter = 'contrast(1.15) saturate(1.2) drop-shadow(0 12px 24px rgba(191,118,145,0.4))';
+                                            }}
+                                            onMouseLeave={e => {
+                                                e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+                                                e.currentTarget.style.filter = 'contrast(1.1) saturate(1.1)';
+                                            }}
+                                            onMouseMove={e => {
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                const x = ((e.clientX - rect.left) / rect.width - 0.5) * 12;
+                                                const y = ((e.clientY - rect.top) / rect.height - 0.5) * -12;
+                                                e.currentTarget.style.transform = `scale(1.1) rotate(${x * 0.3}deg) perspective(600px) rotateY(${x}deg) rotateX(${y}deg)`;
+                                            }}
+                                        />
                                         {editing && (
                                             <button onClick={() => imgRef.current.click()}
-                                                className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 text-white font-bold text-xs gap-1 flex-col hover:bg-black/60 transition-all">
+                                                className="absolute inset-0 flex items-center justify-center bg-black/30 text-white font-bold text-xs gap-1 flex-col hover:bg-black/50 transition-all rounded-2xl">
                                                 <Upload size={18} /> Cambiar
                                             </button>
                                         )}
                                         <input type="file" accept="image/*" ref={imgRef} className="hidden"
-                                            onChange={e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => setP1(s => ({ ...s, productImage: ev.target.result })); r.readAsDataURL(f); }} />
+                                            onChange={async e => {
+                                                const f = e.target.files[0];
+                                                if (!f) return;
+                                                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                                                const form = new FormData();
+                                                form.append('image', f);
+                                                try {
+                                                    const res = await fetch('/api/upload-image', {
+                                                        method: 'POST',
+                                                        headers: { 'X-CSRF-TOKEN': csrf || '' },
+                                                        body: form,
+                                                    });
+                                                    const data = await res.json();
+                                                    if (data.url) setP1(s => ({ ...s, productImage: data.url }));
+                                                } catch {}
+                                            }} />
                                     </div>
                                     <h3 className="text-2xl font-bold text-slate-900">
                                         <Editable value={p1.productName} onChange={v => setP1(s => ({ ...s, productName: v }))} editing={editing} />

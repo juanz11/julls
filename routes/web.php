@@ -29,3 +29,11 @@ Route::post('/api/presupuesto', function (Request $request) {
     Storage::disk('local')->put('presupuesto.json', json_encode($data['data']));
     return response()->json(['ok' => true]);
 });
+
+Route::post('/api/upload-image', function (Request $request) {
+    $request->validate(['image' => 'required|image|max:5120']);
+    $file = $request->file('image');
+    $name = 'product_' . time() . '.' . $file->getClientOriginalExtension();
+    $file->move(public_path(), $name);
+    return response()->json(['url' => '/' . $name]);
+});
