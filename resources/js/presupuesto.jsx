@@ -236,31 +236,48 @@ const PresupuestoApp = () => {
         {
             content: (
                 <div className="space-y-8 animate-in fade-in duration-700">
-                    <div className="overflow-hidden border border-slate-200 rounded-2xl shadow-xl">
-                        <table className="w-full text-left bg-white">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900"><Editable value={p3.headers[0]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 0 ? v : h) }))} editing={editing} /></th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900"><Editable value={p3.headers[1]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 1 ? v : h) }))} editing={editing} /></th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900"><Editable value={p3.headers[2]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 2 ? v : h) }))} editing={editing} /></th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-900 text-center"><Editable value={p3.headers[3]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 3 ? v : h) }))} editing={editing} /></th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {p3.rows.map((row, i) => (
-                                    <tr key={i} className="hover:bg-pink-50/30 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-slate-800"><Editable value={row.name} onChange={v => updateP3Row(i, 'name', v)} editing={editing} /></td>
-                                        <td className="px-6 py-4 text-slate-600"><Editable value={row.dist} onChange={v => updateP3Row(i, 'dist', v)} editing={editing} /></td>
-                                        <td className="px-6 py-4 text-slate-600"><Editable value={row.pvp} onChange={v => updateP3Row(i, 'pvp', v)} editing={editing} /></td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className="px-3 py-1 rounded-full text-sm font-black" style={{ backgroundColor: '#f5dde5', color: PINK }}>
-                                                <Editable value={row.margin} onChange={v => updateP3Row(i, 'margin', v)} editing={editing} />
-                                            </span>
-                                        </td>
+                    {/* Tabla con scroll horizontal */}
+                    <div className="rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+                        {/* Flechas de navegación */}
+                        <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-200">
+                            <span className="text-xs text-slate-400 italic">← desliza para ver toda la tabla →</span>
+                            <div className="flex gap-1">
+                                <button onClick={() => document.getElementById('budget-table-scroll').scrollBy({ left: -150, behavior: 'smooth' })}
+                                    className="p-1 rounded-lg border border-slate-200 hover:bg-white transition-colors">
+                                    <ChevronLeft size={15} className="text-slate-500" />
+                                </button>
+                                <button onClick={() => document.getElementById('budget-table-scroll').scrollBy({ left: 150, behavior: 'smooth' })}
+                                    className="p-1 rounded-lg border border-slate-200 hover:bg-white transition-colors">
+                                    <ChevronRight size={15} className="text-slate-500" />
+                                </button>
+                            </div>
+                        </div>
+                        <div id="budget-table-scroll" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin', scrollbarColor: '#bf7691 #f0dde3' }}>
+                            <table style={{ minWidth: 560, width: '100%', textAlign: 'left', backgroundColor: '#fff' }}>
+                                <thead style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                    <tr>
+                                        <th className="px-6 py-4 text-sm font-bold text-slate-900"><Editable value={p3.headers[0]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 0 ? v : h) }))} editing={editing} /></th>
+                                        <th className="px-6 py-4 text-sm font-bold text-slate-900"><Editable value={p3.headers[1]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 1 ? v : h) }))} editing={editing} /></th>
+                                        <th className="px-6 py-4 text-sm font-bold text-slate-900"><Editable value={p3.headers[2]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 2 ? v : h) }))} editing={editing} /></th>
+                                        <th className="px-6 py-4 text-sm font-bold text-slate-900 text-center"><Editable value={p3.headers[3]} onChange={v => setP3(s => ({ ...s, headers: s.headers.map((h, hi) => hi === 3 ? v : h) }))} editing={editing} /></th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {p3.rows.map((row, i) => (
+                                        <tr key={i} className="hover:bg-pink-50/30 transition-colors">
+                                            <td className="px-6 py-4 font-bold text-slate-800" style={{ whiteSpace: 'nowrap' }}><Editable value={row.name} onChange={v => updateP3Row(i, 'name', v)} editing={editing} /></td>
+                                            <td className="px-6 py-4 text-slate-600" style={{ whiteSpace: 'nowrap' }}><Editable value={row.dist} onChange={v => updateP3Row(i, 'dist', v)} editing={editing} /></td>
+                                            <td className="px-6 py-4 text-slate-600" style={{ whiteSpace: 'nowrap' }}><Editable value={row.pvp} onChange={v => updateP3Row(i, 'pvp', v)} editing={editing} /></td>
+                                            <td className="px-6 py-4 text-center" style={{ whiteSpace: 'nowrap' }}>
+                                                <span className="px-3 py-1 rounded-full text-sm font-black" style={{ backgroundColor: '#f5dde5', color: PINK }}>
+                                                    <Editable value={row.margin} onChange={v => updateP3Row(i, 'margin', v)} editing={editing} />
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="p-6 rounded-2xl text-white" style={{ backgroundColor: PINK }}>
