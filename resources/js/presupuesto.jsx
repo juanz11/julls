@@ -98,15 +98,10 @@ const PresupuestoApp = () => {
             .then(r => r.json())
             .then(data => {
                 if (data) {
-                    if (data.p1) {
-                        // Usar imagen guardada, o logo.jpg si es base64 o antigua
-                        const img = data.p1.productImage;
-                        const clean = img && !img.startsWith('data:') ? img : '/logo.jpg';
-                        setP1({ ...data.p1, productImage: clean });
-                    }
-                    if (data.p2) setP2(data.p2);
-                    if (data.p3) setP3(data.p3);
-                    if (data.pageMeta) setPageMeta(data.pageMeta);
+                    if (data.p1) setP1({ ...DEFAULT_STATE.p1, ...data.p1 });
+                    if (data.p2?.cards?.length) setP2({ cards: data.p2.cards });
+                    if (data.p3?.rows?.length) setP3({ ...DEFAULT_STATE.p3, ...data.p3 });
+                    if (data.pageMeta?.length) setPageMeta(data.pageMeta);
                     if (data.footer) setFooter(data.footer);
                 }
             })
