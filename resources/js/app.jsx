@@ -5,7 +5,9 @@ import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ShoppingCart, Plus, Minus, X, ChevronRight, CheckCircle2, Package } from 'lucide-react';
 
-const DEFAULT_PRODUCTS = [
+const FOOTER_KEY = 'julls_footer';
+const FOOTER_CONFIG = {
+    desc: 'Galletas artesanales de autor. Elaboradas con mantequilla real, sin conservantes artificiales.',
     social: [
         { label: 'Instagram', icon: '📸', href: '#' },
         { label: 'Facebook', icon: '📘', href: '#' },
@@ -31,8 +33,9 @@ const DEFAULT_PRODUCTS = [
 };
 const STORAGE_KEY = 'julls_products';
 const CLIENTS_KEY = 'julls_clients';
-
 const MIN_QTY = 12;
+
+const DEFAULT_PRODUCTS = [
     {
         id: 1,
         name: 'Choco Crunch',
@@ -76,7 +79,6 @@ const LIGHT = '#faf0f1';
 
 const JullsApp = () => {
     const [view, setView] = useState('home');
-    const [footerData, setFooterData] = useState(DEFAULT_FOOTER);
     const [products, setProducts] = useState(() => {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -87,6 +89,9 @@ const JullsApp = () => {
         try { const s = localStorage.getItem(CLIENTS_KEY); return s ? JSON.parse(s) : []; } catch { return []; }
     });
     const [selectedClient, setSelectedClient] = useState('');
+    const [footerData, setFooterData] = useState(() => {
+        try { const s = localStorage.getItem(FOOTER_KEY); return s ? JSON.parse(s) : FOOTER_CONFIG; } catch { return FOOTER_CONFIG; }
+    });
     const banner = {
         imagePc: '/313790.jpg',
         imageMobile: '/313794.jpg',
@@ -105,13 +110,12 @@ const JullsApp = () => {
 
     // Sincronizar con cambios del admin (mismo navegador)
     useEffect(() => {
-        // Cargar footer desde servidor
-        fetch('/api/footer').then(r => r.json()).then(d => { if (d) setFooterData(f => ({ ...f, ...d })); }).catch(() => {});
-
         const onStorage = () => {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) setProducts(JSON.parse(saved));
+                const savedFooter = localStorage.getItem(FOOTER_KEY);
+                if (savedFooter) setFooterData(JSON.parse(savedFooter));
             } catch {}
         };
         window.addEventListener('storage', onStorage);

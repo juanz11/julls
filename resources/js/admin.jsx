@@ -9,6 +9,7 @@ const PINK = '#bf7691';
 const STORAGE_KEY = 'julls_products';
 const CLIENTS_KEY = 'julls_clients';
 const ORDERS_KEY = 'julls_orders';
+const FOOTER_KEY = 'julls_footer';
 const AUTH_KEY = 'julls_admin_auth';
 const MIN_QTY = 12;
 
@@ -559,130 +560,109 @@ const DEFAULT_FOOTER = {
 };
 
 function FooterPanel() {
-    const [data, setData] = useState(DEFAULT_FOOTER);
+    const [footer, setFooter] = useState(() => {
+        try { const s = localStorage.getItem(FOOTER_KEY); return s ? JSON.parse(s) : DEFAULT_FOOTER; } catch { return DEFAULT_FOOTER; }
+    });
     const [saved, setSaved] = useState(false);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetch('/api/footer')
-            .then(r => r.json())
-            .then(d => { if (d) setData({ ...DEFAULT_FOOTER, ...d }); })
-            .catch(() => {})
-            .finally(() => setLoading(false));
-    }, []);
-
-    const save = async () => {
-        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-        await fetch('/api/footer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf || '' },
-            body: JSON.stringify({ data }),
-        });
+    const save = () => {
+        localStorage.setItem(FOOTER_KEY, JSON.stringify(footer));
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     };
 
-    const updateLink = (section, i, field, val) =>
-        setData(d => ({ ...d, [section]: d[section].map((l, li) => li === i ? { ...l, [field]: val } : l) }));
-
-    const updateSocial = (i, field, val) =>
-        setData(d => ({ ...d, social: d.social.map((s, si) => si === i ? { ...s, [field]: val } : s) }));
-
-    if (loading) return <div className="text-center py-8 text-slate-400">Cargando...</div>;
+    const upd = (field, val) => setFooter(f => ({ ...f, [field]: val }));
+    const updLink = (arr, i, field, val) => setFooter(f => ({ ...f, [arr]: f[arr].map((l, li) => li === i ? { ...l, [field]: val } : l) }));
+    const updSocial = (i, field, val) => setFooter(f => ({ ...f, social: f.social.map((s, si) => si === i ? { ...s, [field]: val } : s) }));
 
     return (
-        <div className="space-y-4">
-            {/* Header */}
-            <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: '#f0dde3' }}>
-                <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#f0dde3', backgroundColor: '#fdf5f7' }}>
-                    <h2 className="font-black text-slate-800">Editar Footer de la Web</h2>
-                    <button onClick={save} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-white"
-                        style={{ backgroundColor: saved ? '#22c55e' : PINK }}>
-                        <Save size={14} /> {saved ? '¡Guardado!' : 'Guardar'}
-                    </button>
+        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: '#f0dde3' }}>
+            <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#f0dde3', backgroundColor: '#fdf5f7' }}>
+                <h2 className="font-black text-slate-800">🔻 Editar Footer</h2>
+                <button onClick={save} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-white" style={{ backgroundColor: saved ? '#22c55e' : PINK }}>
+                    <Save size={14} /> {saved ? '¡Guardado!' : 'Guardar'}
+                </button>
+            </div>
+            <div className="p-5 space-y-6">
+                {/* Descripción */}
+                <div>
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Descripción</label>
+                    <textarea value={footer.desc} onChange={e => upd('desc', e.target.value)} rows={2}
+                        className="w-full border rounded-xl px-3 py-2 text-sm outline-none resize-none" style={{ borderColor: '#f0dde3' }} />
                 </div>
 
-                <div className="p-5 space-y-6">
-                    {/* Descripción marca */}
+                {/* Textos newsletter */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Descripción de la marca</label>
-                        <textarea value={data.desc} onChange={e => setData(d => ({ ...d, desc: e.target.value }))} rows={2}
-                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none resize-none" style={{ borderColor: '#f0dde3' }} />
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Título newsletter</label>
+                        <input type="text" value={footer.newsletterTitle} onChange={e => upd('newsletterTitle', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
                     </div>
-
-                    {/* Redes sociales */}
                     <div>
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Redes Sociales</label>
-                        <div className="space-y-2">
-                            {data.social.map((s, i) => (
-                                <div key={i} className="flex gap-2 items-center">
-                                    <input value={s.icon} onChange={e => updateSocial(i, 'icon', e.target.value)}
-                                        className="w-12 border rounded-lg px-2 py-1 text-center text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                                    <input value={s.label} onChange={e => updateSocial(i, 'label', e.target.value)}
-                                        className="w-28 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                                    <input value={s.href} onChange={e => updateSocial(i, 'href', e.target.value)}
-                                        placeholder="https://..." className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                                </div>
-                            ))}
-                        </div>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Descripción newsletter</label>
+                        <input type="text" value={footer.newsletterDesc} onChange={e => upd('newsletterDesc', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
                     </div>
+                </div>
 
-                    {/* Newsletter */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Título newsletter</label>
-                            <input value={data.newsletterTitle} onChange={e => setData(d => ({ ...d, newsletterTitle: e.target.value }))}
-                                className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Descripción newsletter</label>
-                            <input value={data.newsletterDesc} onChange={e => setData(d => ({ ...d, newsletterDesc: e.target.value }))}
-                                className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                        </div>
-                    </div>
-
-                    {/* Links Información */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Links Información</label>
-                            <div className="space-y-2">
-                                {data.infoLinks.map((l, i) => (
-                                    <div key={i} className="flex gap-2">
-                                        <input value={l.label} onChange={e => updateLink('infoLinks', i, 'label', e.target.value)}
-                                            className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                                        <input value={l.href} onChange={e => updateLink('infoLinks', i, 'href', e.target.value)}
-                                            placeholder="URL" className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                                    </div>
-                                ))}
+                {/* Redes sociales */}
+                <div>
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Redes sociales</label>
+                    <div className="space-y-2">
+                        {footer.social.map((s, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <input type="text" value={s.icon} onChange={e => updSocial(i, 'icon', e.target.value)}
+                                    className="w-12 border rounded-lg px-2 py-1 text-center text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                                <input type="text" value={s.label} onChange={e => updSocial(i, 'label', e.target.value)}
+                                    className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} placeholder="Nombre" />
+                                <input type="text" value={s.href} onChange={e => updSocial(i, 'href', e.target.value)}
+                                    className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} placeholder="URL" />
                             </div>
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Links Legales</label>
-                            <div className="space-y-2">
-                                {data.legalLinks.map((l, i) => (
-                                    <div key={i} className="flex gap-2">
-                                        <input value={l.label} onChange={e => updateLink('legalLinks', i, 'label', e.target.value)}
-                                            className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                                        <input value={l.href} onChange={e => updateLink('legalLinks', i, 'href', e.target.value)}
-                                            placeholder="URL" className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        ))}
                     </div>
+                </div>
 
-                    {/* Bottom bar */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Texto inferior izquierda</label>
-                            <input value={data.bottomLeft} onChange={e => setData(d => ({ ...d, bottomLeft: e.target.value }))}
-                                className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Texto inferior derecha</label>
-                            <input value={data.bottomRight} onChange={e => setData(d => ({ ...d, bottomRight: e.target.value }))}
-                                className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
-                        </div>
+                {/* Links info */}
+                <div>
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Links de información</label>
+                    <div className="space-y-2">
+                        {footer.infoLinks.map((l, i) => (
+                            <div key={i} className="flex gap-2">
+                                <input type="text" value={l.label} onChange={e => updLink('infoLinks', i, 'label', e.target.value)}
+                                    className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} placeholder="Texto" />
+                                <input type="text" value={l.href} onChange={e => updLink('infoLinks', i, 'href', e.target.value)}
+                                    className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} placeholder="URL" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Links legales */}
+                <div>
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Links legales</label>
+                    <div className="space-y-2">
+                        {footer.legalLinks.map((l, i) => (
+                            <div key={i} className="flex gap-2">
+                                <input type="text" value={l.label} onChange={e => updLink('legalLinks', i, 'label', e.target.value)}
+                                    className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} placeholder="Texto" />
+                                <input type="text" value={l.href} onChange={e => updLink('legalLinks', i, 'href', e.target.value)}
+                                    className="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" style={{ borderColor: '#f0dde3' }} placeholder="URL" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Barra inferior */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Texto izquierda</label>
+                        <input type="text" value={footer.bottomLeft} onChange={e => upd('bottomLeft', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Texto derecha</label>
+                        <input type="text" value={footer.bottomRight} onChange={e => upd('bottomRight', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
                     </div>
                 </div>
             </div>
