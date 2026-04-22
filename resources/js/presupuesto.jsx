@@ -162,7 +162,7 @@ const PresupuestoApp = () => {
                         <div className="rounded-3xl p-8 border-2 shadow-2xl overflow-hidden" style={{ backgroundColor: '#fdf5f7', borderColor: '#f0dde3' }}>
                             <div className="flex items-center justify-center" style={{ minHeight: 0 }}>
                                 <div className="text-center">
-                                    <div className="relative mx-auto mb-1 flex items-center justify-center" style={{ width: 400, height: 300 }}>
+                                    <div className="relative mx-auto mb-1 flex items-center justify-center" style={{ width: '100%', maxWidth: 400, height: 320 }}>
                                         <img src={p1.productImage} alt="Producto"
                                             style={{
                                                 maxWidth: '100%',
@@ -219,16 +219,16 @@ const PresupuestoApp = () => {
                                         <Editable value={p1.productSlogan} onChange={v => setP1(s => ({ ...s, productSlogan: v }))} editing={editing} />
                                     </p>
                                 </div>
-                            </div>                            <div className="flex justify-between items-end">
-                                <div>
+                            </div>                            <div className="flex justify-between items-end mt-4 gap-2">
+                                <div className="min-w-0">
                                     <p className="text-xs text-slate-400 uppercase font-bold">Peso Neto</p>
-                                    <p className="text-xl font-black text-slate-800">
+                                    <p className="text-base md:text-xl font-black text-slate-800">
                                         <Editable value={p1.productWeight} onChange={v => setP1(s => ({ ...s, productWeight: v }))} editing={editing} />
                                     </p>
                                 </div>
-                                <div className="text-white px-4 py-2 rounded-xl text-center" style={{ backgroundColor: PINK }}>
+                                <div className="text-white px-3 py-2 rounded-xl text-center flex-shrink-0" style={{ backgroundColor: PINK }}>
                                     <p className="text-[10px] uppercase">Margen Retail</p>
-                                    <p className="text-xl font-black">
+                                    <p className="text-lg md:text-xl font-black">
                                         <Editable value={p1.productMargin} onChange={v => setP1(s => ({ ...s, productMargin: v }))} editing={editing} />
                                     </p>
                                 </div>
@@ -354,7 +354,7 @@ const PresupuestoApp = () => {
     return (
         <div className="min-h-screen flex items-center justify-center p-4 font-sans" style={{ backgroundColor: LIGHT }}>
             <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] overflow-hidden border border-slate-100">
-                <div className="px-12 pt-12 pb-6 flex justify-between items-start border-b border-slate-50">
+                <div className="px-4 md:px-12 pt-8 md:pt-12 pb-6 flex justify-between items-start border-b border-slate-50">
                     <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
                             <img src="/313790.jpg" alt="Julls Logo" className="w-10 h-10 rounded-full object-cover" />
@@ -390,9 +390,9 @@ const PresupuestoApp = () => {
                     </div>
                 </div>
 
-                <div className="px-12 py-10 min-h-[450px]">{pages[currentPage].content}</div>
+                <div className="px-4 md:px-12 py-10 min-h-[450px]">{pages[currentPage].content}</div>
 
-                <div className="px-12 py-8 flex justify-between items-center" style={{ backgroundColor: '#faf0f1' }}>
+                <div className="px-4 md:px-12 py-8 flex justify-between items-center" style={{ backgroundColor: '#faf0f1' }}>
                     <Editable value={footer} onChange={setFooter} editing={editing} className="text-xs text-slate-400 font-medium" />
                     <div className="flex gap-2">
                         <button

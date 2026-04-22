@@ -37,3 +37,17 @@ Route::post('/api/upload-image', function (Request $request) {
     $file->move(public_path(), $name);
     return response()->json(['url' => '/' . $name]);
 });
+
+// API para el footer
+Route::get('/api/footer', function () {
+    if (Storage::disk('local')->exists('footer.json')) {
+        return response()->json(json_decode(Storage::disk('local')->get('footer.json'), true));
+    }
+    return response()->json(null);
+});
+
+Route::post('/api/footer', function (Request $request) {
+    $data = $request->validate(['data' => 'required|array']);
+    Storage::disk('local')->put('footer.json', json_encode($data['data']));
+    return response()->json(['ok' => true]);
+});

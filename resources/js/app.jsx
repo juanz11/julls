@@ -5,11 +5,34 @@ import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ShoppingCart, Plus, Minus, X, ChevronRight, CheckCircle2, Package } from 'lucide-react';
 
+const DEFAULT_PRODUCTS = [
+    social: [
+        { label: 'Instagram', icon: '📸', href: '#' },
+        { label: 'Facebook', icon: '📘', href: '#' },
+        { label: 'TikTok', icon: '🎵', href: '#' },
+        { label: 'YouTube', icon: '▶️', href: '#' },
+    ],
+    newsletterTitle: 'Recibe novedades',
+    newsletterDesc: 'Ofertas exclusivas y nuevos sabores directo a tu email.',
+    infoLinks: [
+        { label: 'Contacto', href: '#' },
+        { label: 'Sobre nosotros', href: '#' },
+        { label: 'Preguntas frecuentes', href: '#' },
+        { label: 'Cómo pedimos', href: '#' },
+    ],
+    legalLinks: [
+        { label: 'Aviso legal', href: '#' },
+        { label: 'Política de cookies', href: '#' },
+        { label: 'Política de privacidad', href: '#' },
+        { label: 'Términos de venta', href: '#' },
+    ],
+    bottomLeft: '© 2026 JULLS Repostería · Todos los derechos reservados',
+    bottomRight: 'Hecho con 🍪 y mucho amor',
+};
 const STORAGE_KEY = 'julls_products';
 const CLIENTS_KEY = 'julls_clients';
-const MIN_QTY = 12;
 
-const DEFAULT_PRODUCTS = [
+const MIN_QTY = 12;
     {
         id: 1,
         name: 'Choco Crunch',
@@ -53,6 +76,7 @@ const LIGHT = '#faf0f1';
 
 const JullsApp = () => {
     const [view, setView] = useState('home');
+    const [footerData, setFooterData] = useState(DEFAULT_FOOTER);
     const [products, setProducts] = useState(() => {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -81,6 +105,9 @@ const JullsApp = () => {
 
     // Sincronizar con cambios del admin (mismo navegador)
     useEffect(() => {
+        // Cargar footer desde servidor
+        fetch('/api/footer').then(r => r.json()).then(d => { if (d) setFooterData(f => ({ ...f, ...d })); }).catch(() => {});
+
         const onStorage = () => {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
@@ -436,23 +463,16 @@ const JullsApp = () => {
             <footer style={{ backgroundColor: '#3a2a30', color: '#e8d5db' }}>
                 <div className="max-w-6xl mx-auto px-6 py-12">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-
                         {/* Marca */}
                         <div>
                             <div className="flex items-center gap-3 mb-4">
                                 <img src="/313790.jpg" alt="Julls" className="w-10 h-10 rounded-full object-cover" />
                                 <span className="font-black text-lg tracking-tighter" style={{ color: '#e8a0b4' }}>JULLS <span className="text-white">Repostería</span></span>
                             </div>
-                            <p className="text-sm opacity-70 leading-relaxed mb-5">Galletas artesanales de autor. Elaboradas con mantequilla real, sin conservantes artificiales.</p>
-                            {/* Redes sociales */}
+                            <p className="text-sm opacity-70 leading-relaxed mb-5">{footerData.desc}</p>
                             <p className="text-xs font-bold uppercase tracking-widest mb-3 opacity-60">Síguenos</p>
                             <div className="flex gap-3">
-                                {[
-                                    { label: 'Instagram', icon: '📸', href: '#' },
-                                    { label: 'Facebook', icon: '📘', href: '#' },
-                                    { label: 'TikTok', icon: '🎵', href: '#' },
-                                    { label: 'YouTube', icon: '▶️', href: '#' },
-                                ].map(s => (
+                                {footerData.social.map(s => (
                                     <a key={s.label} href={s.href} title={s.label} target="_blank" rel="noreferrer"
                                         className="w-9 h-9 rounded-full flex items-center justify-center text-base transition-all hover:scale-110"
                                         style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
@@ -461,11 +481,10 @@ const JullsApp = () => {
                                 ))}
                             </div>
                         </div>
-
                         {/* Newsletter */}
                         <div>
-                            <p className="font-black text-base mb-1" style={{ color: '#e8a0b4' }}>Recibe novedades</p>
-                            <p className="text-sm opacity-60 mb-4">Ofertas exclusivas y nuevos sabores directo a tu email.</p>
+                            <p className="font-black text-base mb-1" style={{ color: '#e8a0b4' }}>{footerData.newsletterTitle}</p>
+                            <p className="text-sm opacity-60 mb-4">{footerData.newsletterDesc}</p>
                             <form onSubmit={e => e.preventDefault()} className="space-y-2">
                                 <input type="email" placeholder="tu@email.com" required
                                     className="w-full rounded-xl px-4 py-2 text-sm outline-none text-slate-800"
@@ -481,17 +500,11 @@ const JullsApp = () => {
                                 </button>
                             </form>
                         </div>
-
                         {/* Links */}
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2 content-start">
                             <div>
                                 <p className="text-xs font-bold uppercase tracking-widest mb-3 opacity-60">Información</p>
-                                {[
-                                    { label: 'Contacto', href: '#' },
-                                    { label: 'Sobre nosotros', href: '#' },
-                                    { label: 'Preguntas frecuentes', href: '#' },
-                                    { label: 'Cómo pedimos', href: '#' },
-                                ].map(l => (
+                                {footerData.infoLinks.map(l => (
                                     <a key={l.label} href={l.href}
                                         className="block text-sm opacity-70 hover:opacity-100 mb-2 transition-opacity">
                                         {l.label}
@@ -500,12 +513,7 @@ const JullsApp = () => {
                             </div>
                             <div>
                                 <p className="text-xs font-bold uppercase tracking-widest mb-3 opacity-60">Legal</p>
-                                {[
-                                    { label: 'Aviso legal', href: '#' },
-                                    { label: 'Política de cookies', href: '#' },
-                                    { label: 'Política de privacidad', href: '#' },
-                                    { label: 'Términos de venta', href: '#' },
-                                ].map(l => (
+                                {footerData.legalLinks.map(l => (
                                     <a key={l.label} href={l.href}
                                         className="block text-sm opacity-70 hover:opacity-100 mb-2 transition-opacity">
                                         {l.label}
@@ -514,11 +522,10 @@ const JullsApp = () => {
                             </div>
                         </div>
                     </div>
-
                     {/* Bottom bar */}
                     <div className="mt-10 pt-6 border-t flex flex-col md:flex-row items-center justify-between gap-2 text-xs opacity-40" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-                        <span>© {new Date().getFullYear()} JULLS Repostería · Todos los derechos reservados</span>
-                        <span>Hecho con 🍪 y mucho amor</span>
+                        <span>{footerData.bottomLeft}</span>
+                        <span>{footerData.bottomRight}</span>
                     </div>
                 </div>
             </footer>
