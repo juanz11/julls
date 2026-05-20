@@ -110,6 +110,15 @@ const JullsApp = () => {
 
     // Sincronizar con cambios del admin (mismo navegador)
     useEffect(() => {
+        // Cargar datos del servidor al iniciar
+        const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const load = (key) => fetch(`/api/store/${key}`).then(r => r.json()).catch(() => null);
+
+        Promise.all([load('products'), load('footer')]).then(([prods, foot]) => {
+            if (prods && Array.isArray(prods)) setProducts(prods);
+            if (foot && foot.social) setFooterData(foot);
+        });
+
         const onStorage = () => {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);

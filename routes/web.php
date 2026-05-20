@@ -16,6 +16,14 @@ Route::get('/presupuesto', function () {
     return view('presupuesto');
 });
 
+Route::get('/Obsequios', function () {
+    return view('obsequios');
+});
+
+Route::get('/obsequios', function () {
+    return redirect('/Obsequios');
+});
+
 // API para el presupuesto
 Route::get('/api/presupuesto', function () {
     if (Storage::disk('local')->exists('presupuesto.json')) {
@@ -38,7 +46,24 @@ Route::post('/api/upload-image', function (Request $request) {
     return response()->json(['url' => '/' . $name]);
 });
 
-// API para el footer
+// API genérica para datos de la tienda
+foreach (['products', 'clients', 'orders', 'footer', 'banner'] as $key) {
+    Route::get("/api/store/{$key}", function () use ($key) {
+        $file = "{$key}.json";
+        if (Storage::disk('local')->exists($file)) {
+            return response()->json(json_decode(Storage::disk('local')->get($file), true));
+        }
+        return response()->json(null);
+    });
+
+    Route::post("/api/store/{$key}", function (Request $request) use ($key) {
+        $data = $request->input('data');
+        Storage::disk('local')->put("{$key}.json", json_encode($data));
+        return response()->json(['ok' => true]);
+    });
+}
+
+// API para el footer (legacy)
 Route::get('/api/footer', function () {
     if (Storage::disk('local')->exists('footer.json')) {
         return response()->json(json_decode(Storage::disk('local')->get('footer.json'), true));

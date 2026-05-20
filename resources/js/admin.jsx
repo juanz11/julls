@@ -567,6 +567,12 @@ function FooterPanel() {
 
     const save = () => {
         localStorage.setItem(FOOTER_KEY, JSON.stringify(footer));
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        fetch('/api/store/footer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ data: footer }),
+        }).catch(() => {});
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     };
@@ -673,7 +679,7 @@ function FooterPanel() {
 // ── App principal ──────────────────────────────────────────────────────────
 function AdminApp() {
     const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
-    const [tab, setTab] = useState('products'); // 'products' | 'clients' | 'orders' | 'budget'
+    const [tab, setTab] = useState('products');
     const [products, setProducts] = useState(() => {
         try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : DEFAULT_PRODUCTS; } catch { return DEFAULT_PRODUCTS; }
     });
@@ -682,13 +688,29 @@ function AdminApp() {
     });
     const [saved, setSaved] = useState(false);
 
+    // Cargar del servidor al montar
+    useEffect(() => {
+        const load = (key) => fetch(`/api/store/${key}`).then(r => r.json()).catch(() => null);
+        load('products').then(d => { if (d && Array.isArray(d)) { setProducts(d); localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } });
+        load('clients').then(d => { if (d && Array.isArray(d)) { setClients(d); localStorage.setItem(CLIENTS_KEY, JSON.stringify(d)); } });
+    }, []);
+
     if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
 
     const logout = () => { sessionStorage.removeItem(AUTH_KEY); setAuthed(false); };
 
     const save = () => {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const post = (key, data) => fetch(`/api/store/${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ data }),
+        }).catch(() => {});
+
         localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
         localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
+        post('products', products);
+        post('clients', clients);
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
     };
