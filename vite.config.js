@@ -14,6 +14,7 @@ export default defineConfig({
                 'resources/js/obsequios.jsx'
             ],
             refresh: true,
+            detect: false,
         }),
         tailwindcss(),
         react(),
