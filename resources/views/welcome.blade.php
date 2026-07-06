@@ -7,8 +7,8 @@
         <title>{{ config('app.name', 'JULLS Repostería') }}</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700,900" rel="stylesheet" />
-        <link rel="stylesheet" href="{{ asset('build/assets/app-CgvDsYBk.css') }}">
-<script type="module" src="{{ asset('build/assets/app-S2H9GOG0.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset('build/assets/app-BIMBjZH9.css') }}">
+<script type="module" src="{{ asset('build/assets/app-NMkS6xpd.js') }}"></script>
     </head>
     <body>
         <div id="app"></div>

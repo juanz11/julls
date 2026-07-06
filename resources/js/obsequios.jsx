@@ -13,7 +13,45 @@ const ObsequiosApp = () => {
     const [email, setEmail] = useState('');
     const [subscribed, setSubscribed] = useState(false);
     const [error, setError] = useState('');
-    const [timeLeft, setTimeLeft] = useState({ days: 8, hours: 14, minutes: 32, seconds: 45 });
+    const [config, setConfig] = useState(() => {
+        try {
+            const saved = localStorage.getItem('julls_obsequios');
+            return saved ? JSON.parse(saved) : {
+                title: '¡Sección de Obsequios',
+                titleHighlight: 'en el Horno! 🍪✨',
+                description: 'Estamos diseñando y horneando los empaques más dulces, cajas de regalo exclusivas y combinaciones deliciosas para tus momentos más especiales. ¡El regalo perfecto está por llegar!',
+                badge: 'DETALLES ÚNICOS & REGALOS',
+                image: '/obsequios_maintenance.png',
+                countdownLabel: 'Lanzamiento estimado en:',
+                countdownDays: 8,
+                countdownHours: 14,
+                countdownMinutes: 32,
+                countdownSeconds: 45,
+                formTitle: '¡Sé el primero en enterarte del lanzamiento!',
+                buttonText: 'Avisarme',
+                successTitle: '¡Te has registrado con éxito!',
+                successMessage: 'Te enviaremos un correo dulce tan pronto como la sección de obsequios esté lista.',
+            };
+        } catch {
+            return {
+                title: '¡Sección de Obsequios',
+                titleHighlight: 'en el Horno! 🍪✨',
+                description: 'Estamos diseñando y horneando los empaques más dulces, cajas de regalo exclusivas y combinaciones deliciosas para tus momentos más especiales. ¡El regalo perfecto está por llegar!',
+                badge: 'DETALLES ÚNICOS & REGALOS',
+                image: '/obsequios_maintenance.png',
+                countdownLabel: 'Lanzamiento estimado en:',
+                countdownDays: 8,
+                countdownHours: 14,
+                countdownMinutes: 32,
+                countdownSeconds: 45,
+                formTitle: '¡Sé el primero en enterarte del lanzamiento!',
+                buttonText: 'Avisarme',
+                successTitle: '¡Te has registrado con éxito!',
+                successMessage: 'Te enviaremos un correo dulce tan pronto como la sección de obsequios esté lista.',
+            };
+        }
+    });
+    const [timeLeft, setTimeLeft] = useState({ days: config.countdownDays, hours: config.countdownHours, minutes: config.countdownMinutes, seconds: config.countdownSeconds });
 
     // Cargar email si ya se registró antes
     useEffect(() => {
@@ -140,7 +178,7 @@ const ObsequiosApp = () => {
                             {/* Decorative Glow */}
                             <div className="absolute inset-0 bg-pink-200/40 rounded-full blur-3xl scale-95 animate-pulse" />
                             <img
-                                src="/obsequios_maintenance.png"
+                                src={config.image}
                                 alt="Caja de obsequios y repostería gourmet"
                                 className="relative rounded-3xl object-contain max-h-[320px] md:max-h-[380px] drop-shadow-[0_20px_35px_rgba(191,118,145,0.3)] transition-transform duration-500 hover:scale-105"
                             />
@@ -154,22 +192,22 @@ const ObsequiosApp = () => {
                     {/* Right Column: Information & Interaction */}
                     <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-4 tracking-wide w-fit" style={{ backgroundColor: '#f5dde5', color: PINK }}>
-                            <Gift size={14} /> DETALLES ÚNICOS & REGALOS
+                            <Gift size={14} /> {config.badge}
                         </div>
-                        
+
                         <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight mb-3">
-                            ¡Sección de Obsequios <br />
-                            <span style={{ color: PINK }}>en el Horno! 🍪✨</span>
+                            {config.title} <br />
+                            <span style={{ color: PINK }}>{config.titleHighlight}</span>
                         </h1>
-                        
+
                         <p className="text-slate-500 text-sm md:text-base leading-relaxed mb-6">
-                            Estamos diseñando y horneando los empaques más dulces, cajas de regalo exclusivas y combinaciones deliciosas para tus momentos más especiales. ¡El regalo perfecto está por llegar!
+                            {config.description}
                         </p>
 
                         {/* COUNTDOWN TIMER */}
                         <div className="mb-8">
                             <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-3 flex items-center gap-1">
-                                <Clock size={12} className="text-pink-400" /> Lanzamiento estimado en:
+                                <Clock size={12} className="text-pink-400" /> {config.countdownLabel}
                             </p>
                             <div className="grid grid-cols-4 gap-3 text-center">
                                 {[
@@ -194,7 +232,7 @@ const ObsequiosApp = () => {
                         {!subscribed ? (
                             <form onSubmit={handleSubscribe} className="space-y-3">
                                 <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">
-                                    ¡Sé el primero en enterarte del lanzamiento!
+                                    {config.formTitle}
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-2">
                                     <div className="relative flex-1">
@@ -213,7 +251,7 @@ const ObsequiosApp = () => {
                                         className="flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-white transition-all hover:opacity-90 active:scale-95 shadow-md flex-shrink-0"
                                         style={{ backgroundColor: PINK }}
                                     >
-                                        Avisarme <Send size={14} />
+                                        {config.buttonText} <Send size={14} />
                                     </button>
                                 </div>
                                 {error && (
@@ -226,8 +264,8 @@ const ObsequiosApp = () => {
                             <div className="p-4 rounded-2xl border flex items-start gap-3 bg-green-50/50 animate-fade-in" style={{ borderColor: '#bbf7d0' }}>
                                 <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="font-bold text-green-800 text-sm">¡Te has registrado con éxito!</p>
-                                    <p className="text-xs text-green-600 mt-0.5">Te enviaremos un correo dulce tan pronto como la sección de obsequios esté lista.</p>
+                                    <p className="font-bold text-green-800 text-sm">{config.successTitle}</p>
+                                    <p className="text-xs text-green-600 mt-0.5">{config.successMessage}</p>
                                 </div>
                             </div>
                         )}

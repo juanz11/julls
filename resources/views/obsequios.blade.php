@@ -7,8 +7,8 @@
         <title>Obsequios · JULLS Repostería</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700,900" rel="stylesheet" />
-        <link rel="stylesheet" href="{{ asset('build/assets/app-CgvDsYBk.css') }}">
-<script type="module" src="{{ asset('build/assets/obsequios-DzhHws6t.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset('build/assets/app-BIMBjZH9.css') }}">
+<script type="module" src="{{ asset('build/assets/obsequios-C2heqsX3.js') }}"></script>
     </head>
     <body class="antialiased">
         <div id="obsequios"></div>

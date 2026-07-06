@@ -3,13 +3,14 @@ import '../css/app.css';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Plus, Trash2, Save, X, ChevronDown, ChevronUp, Upload, LogOut, Users, Package, ShoppingBag, CheckCircle, Clock, XCircle, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Save, X, ChevronDown, ChevronUp, Upload, LogOut, Users, Package, ShoppingBag, CheckCircle, Clock, XCircle, DollarSign, ChevronLeft, ChevronRight, Gift } from 'lucide-react';
 
 const PINK = '#bf7691';
 const STORAGE_KEY = 'julls_products';
 const CLIENTS_KEY = 'julls_clients';
 const ORDERS_KEY = 'julls_orders';
 const FOOTER_KEY = 'julls_footer';
+const OBSEQUIOS_KEY = 'julls_obsequios';
 const AUTH_KEY = 'julls_admin_auth';
 const MIN_QTY = 12;
 
@@ -20,6 +21,23 @@ const DEFAULT_PRODUCTS = [
 ];
 
 const TAGS = ['BESTSELLER', 'PREMIUM', 'BITE-SIZE', 'NUEVO', 'OFERTA', 'LIMITADO'];
+
+const DEFAULT_OBSEQUIOS = {
+    title: '¡Sección de Obsequios',
+    titleHighlight: 'en el Horno! 🍪✨',
+    description: 'Estamos diseñando y horneando los empaques más dulces, cajas de regalo exclusivas y combinaciones deliciosas para tus momentos más especiales. ¡El regalo perfecto está por llegar!',
+    badge: 'DETALLES ÚNICOS & REGALOS',
+    image: '/obsequios_maintenance.png',
+    countdownLabel: 'Lanzamiento estimado en:',
+    countdownDays: 8,
+    countdownHours: 14,
+    countdownMinutes: 32,
+    countdownSeconds: 45,
+    formTitle: '¡Sé el primero en enterarte del lanzamiento!',
+    buttonText: 'Avisarme',
+    successTitle: '¡Te has registrado con éxito!',
+    successMessage: 'Te enviaremos un correo dulce tan pronto como la sección de obsequios esté lista.',
+};
 
 // ── Login ──────────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
@@ -676,6 +694,146 @@ function FooterPanel() {
     );
 }
 
+// ── Panel de Obsequios ───────────────────────────────────────────────────────
+function ObsequiosPanel() {
+    const [config, setConfig] = useState(() => {
+        try { const s = localStorage.getItem(OBSEQUIOS_KEY); return s ? JSON.parse(s) : DEFAULT_OBSEQUIOS; } catch { return DEFAULT_OBSEQUIOS; }
+    });
+    const [saved, setSaved] = useState(false);
+
+    const save = () => {
+        localStorage.setItem(OBSEQUIOS_KEY, JSON.stringify(config));
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        fetch('/api/store/obsequios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ data: config }),
+        }).catch(() => {});
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    };
+
+    const upd = (field, val) => setConfig(c => ({ ...c, [field]: val }));
+
+    return (
+        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: '#f0dde3' }}>
+            <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#f0dde3', backgroundColor: '#fdf5f7' }}>
+                <div className="flex items-center gap-2">
+                    <Gift size={18} style={{ color: PINK }} />
+                    <h2 className="font-black text-slate-800">Editar Sección Obsequios</h2>
+                </div>
+                <button onClick={save} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-white transition-all"
+                    style={{ backgroundColor: saved ? '#22c55e' : PINK }}>
+                    <Save size={14} /> {saved ? '¡Guardado!' : 'Guardar'}
+                </button>
+            </div>
+            <div className="p-5 space-y-6">
+                {/* Badge */}
+                <div>
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Badge (etiqueta superior)</label>
+                    <input type="text" value={config.badge} onChange={e => upd('badge', e.target.value)}
+                        className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                </div>
+
+                {/* Títulos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Título principal</label>
+                        <input type="text" value={config.title} onChange={e => upd('title', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Título destacado</label>
+                        <input type="text" value={config.titleHighlight} onChange={e => upd('titleHighlight', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                    </div>
+                </div>
+
+                {/* Descripción */}
+                <div>
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Descripción</label>
+                    <textarea value={config.description} onChange={e => upd('description', e.target.value)} rows={3}
+                        className="w-full border rounded-xl px-3 py-2 text-sm outline-none resize-none" style={{ borderColor: '#f0dde3' }} />
+                </div>
+
+                {/* Imagen */}
+                <div>
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Imagen principal</label>
+                    <div className="flex gap-3 items-start">
+                        <div className="w-24 h-24 rounded-xl border overflow-hidden flex-shrink-0 bg-slate-50 flex items-center justify-center" style={{ borderColor: '#f0dde3' }}>
+                            {config.image ? <img src={config.image} alt="" className="w-full h-full object-cover" onError={e => e.target.style.display='none'} /> : <Upload size={20} className="text-slate-300" />}
+                        </div>
+                        <div className="flex-1">
+                            <input type="text" value={config.image} onChange={e => upd('image', e.target.value)} placeholder="/ruta/imagen.png"
+                                className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                            <p className="text-xs text-slate-400 mt-1">URL de la imagen (ej: /obsequios_maintenance.png)</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Countdown */}
+                <div>
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-2">Countdown (cuenta regresiva)</label>
+                    <div className="mb-3">
+                        <input type="text" value={config.countdownLabel} onChange={e => upd('countdownLabel', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                        <div>
+                            <label className="text-xs text-slate-500 block mb-1">Días</label>
+                            <input type="number" min="0" value={config.countdownDays} onChange={e => upd('countdownDays', parseInt(e.target.value) || 0)}
+                                className="w-full border rounded-lg px-2 py-1 text-center text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-500 block mb-1">Horas</label>
+                            <input type="number" min="0" max="23" value={config.countdownHours} onChange={e => upd('countdownHours', parseInt(e.target.value) || 0)}
+                                className="w-full border rounded-lg px-2 py-1 text-center text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-500 block mb-1">Minutos</label>
+                            <input type="number" min="0" max="59" value={config.countdownMinutes} onChange={e => upd('countdownMinutes', parseInt(e.target.value) || 0)}
+                                className="w-full border rounded-lg px-2 py-1 text-center text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-500 block mb-1">Segundos</label>
+                            <input type="number" min="0" max="59" value={config.countdownSeconds} onChange={e => upd('countdownSeconds', parseInt(e.target.value) || 0)}
+                                className="w-full border rounded-lg px-2 py-1 text-center text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Formulario */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Título del formulario</label>
+                        <input type="text" value={config.formTitle} onChange={e => upd('formTitle', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Texto del botón</label>
+                        <input type="text" value={config.buttonText} onChange={e => upd('buttonText', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                    </div>
+                </div>
+
+                {/* Mensaje de éxito */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Título de éxito</label>
+                        <input type="text" value={config.successTitle} onChange={e => upd('successTitle', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-1">Mensaje de éxito</label>
+                        <input type="text" value={config.successMessage} onChange={e => upd('successMessage', e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── App principal ──────────────────────────────────────────────────────────
 function AdminApp() {
     const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
@@ -741,7 +899,7 @@ function AdminApp() {
                 </div>
                 {/* Tabs */}
                 <div className="max-w-3xl mx-auto px-6 flex gap-1 pb-3">
-                    {[['products', <Package size={15} />, 'Productos'], ['clients', <Users size={15} />, 'Clientes'], ['orders', <ShoppingBag size={15} />, 'Pedidos'], ['budget', <DollarSign size={15} />, 'Presupuesto'], ['footer', '🔻', 'Footer']].map(([key, icon, label]) => (
+                    {[['products', <Package size={15} />, 'Productos'], ['clients', <Users size={15} />, 'Clientes'], ['orders', <ShoppingBag size={15} />, 'Pedidos'], ['budget', <DollarSign size={15} />, 'Presupuesto'], ['obsequios', <Gift size={15} />, 'Obsequios'], ['footer', '🔻', 'Footer']].map(([key, icon, label]) => (
                         <button key={key} onClick={() => setTab(key)}
                             className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all"
                             style={{ backgroundColor: tab === key ? PINK : 'transparent', color: tab === key ? '#fff' : PINK, border: `2px solid ${PINK}` }}>
@@ -757,6 +915,8 @@ function AdminApp() {
                 {tab === 'orders' && <OrdersPanel />}
 
                 {tab === 'budget' && <BudgetPanel products={products} />}
+
+                {tab === 'obsequios' && <ObsequiosPanel />}
 
                 {tab === 'footer' && <FooterPanel />}
 
