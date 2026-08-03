@@ -7,8 +7,8 @@
         <title>Presupuesto · JULLS</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700,900" rel="stylesheet" />
-        <link rel="stylesheet" href="{{ asset('build/assets/app-BIMBjZH9.css') }}">
-<script type="module" src="{{ asset('build/assets/presupuesto-BA8EHBEr.js') }}"></script>
+        @viteReactRefresh
+        @vite(['resources/css/app.css', 'resources/js/presupuesto.jsx'])
     </head>
     <body>
         <div id="presupuesto"></div>

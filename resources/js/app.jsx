@@ -363,7 +363,7 @@ const JullsApp = () => {
                                         <div className="flex items-center justify-between">
                                             <span className="text-xl font-black" style={{ color: PINK }}>${p.price.toFixed(2)}</span>
                                             <button
-                                                onClick={() => { setView('catalog'); }}
+                                                onClick={() => { window.location.href = '/menu'; }}
                                                 className="text-sm font-bold px-4 py-2 rounded-full text-white"
                                                 style={{ backgroundColor: PINK }}
                                             >

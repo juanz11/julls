@@ -24,6 +24,22 @@ Route::get('/obsequios', function () {
     return redirect('/Obsequios');
 });
 
+Route::get('/menu', [\App\Http\Controllers\PosController::class, 'index']);
+
+Route::get('/pos', [\App\Http\Controllers\PosController::class, 'index']);
+
+// API para el POS / inventario
+Route::prefix('api/pos')->group(function () {
+    Route::get('/catalog', [\App\Http\Controllers\PosController::class, 'catalog']);
+    Route::get('/products', [\App\Http\Controllers\PosController::class, 'products']);
+    Route::get('/categories', [\App\Http\Controllers\PosController::class, 'categories']);
+    Route::get('/orders', [\App\Http\Controllers\PosController::class, 'orders']);
+    Route::get('/orders/{order}', [\App\Http\Controllers\PosController::class, 'showOrder']);
+    Route::post('/orders', [\App\Http\Controllers\PosController::class, 'storeOrder']);
+    Route::post('/orders/{order}/payments', [\App\Http\Controllers\PosController::class, 'storePayment']);
+    Route::post('/orders/{order}/status', [\App\Http\Controllers\PosController::class, 'updateOrderStatus']);
+});
+
 // API para el presupuesto
 Route::get('/api/presupuesto', function () {
     if (Storage::disk('local')->exists('presupuesto.json')) {
