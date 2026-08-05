@@ -38,6 +38,8 @@ Route::prefix('api/pos')->group(function () {
     Route::post('/orders', [\App\Http\Controllers\PosController::class, 'storeOrder']);
     Route::post('/orders/{order}/payments', [\App\Http\Controllers\PosController::class, 'storePayment']);
     Route::post('/orders/{order}/status', [\App\Http\Controllers\PosController::class, 'updateOrderStatus']);
+    Route::post('/orders/{order}/approve', [\App\Http\Controllers\PosController::class, 'approveOrder']);
+    Route::post('/orders/{order}/reject', [\App\Http\Controllers\PosController::class, 'rejectOrder']);
 });
 
 // API para el presupuesto

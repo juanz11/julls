@@ -335,6 +335,7 @@ function PaymentModal({ total, onClose, onPay, saving }) {
     const [amount, setAmount] = useState(formatMoney(total));
     const [received, setReceived] = useState(formatMoney(total));
     const [reference, setReference] = useState('');
+    const [copied, setCopied] = useState(null);
 
     const numericAmount = parseFloat(amount) || 0;
     const numericReceived = parseFloat(received) || 0;
@@ -348,14 +349,36 @@ function PaymentModal({ total, onClose, onPay, saving }) {
 
     const setExact = () => { setAmount(formatMoney(total)); setReceived(formatMoney(total)); };
 
+    const copyToClipboard = async (text, label) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(label);
+            setTimeout(() => setCopied(null), 1500);
+        } catch {
+            // ignore
+        }
+    };
+
+    const bankRows = method === 'mobile' ? [
+        { label: 'Banco', value: 'Banco de Venezuela' },
+        { label: 'Teléfono', value: '0412-123-4567' },
+        { label: 'Cédula', value: 'V-12.345.678' },
+        { label: 'Beneficiario', value: 'JULLS C.A.' },
+    ] : method === 'transfer' ? [
+        { label: 'Banco', value: 'Banco Mercantil' },
+        { label: 'Cuenta', value: '0105-0012-34-5678901234' },
+        { label: 'Tipo', value: 'Corriente' },
+        { label: 'Beneficiario', value: 'JULLS C.A.' },
+    ] : [];
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
                 <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#f0dde3' }}>
                     <h3 className="font-black text-lg">Cobrar</h3>
                     <button onClick={onClose}><X size={20} className="text-slate-400" /></button>
                 </div>
-                <form onSubmit={submit} className="p-4 space-y-4">
+                <form onSubmit={submit} className="p-4 space-y-4 overflow-y-auto">
                     <div className="text-center py-4 rounded-xl" style={{ backgroundColor: LIGHT }}>
                         <p className="text-sm text-slate-500 font-medium">Total a pagar</p>
                         <p className="text-4xl font-black" style={{ color: PINK }}>${formatMoney(total)}</p>
@@ -385,10 +408,34 @@ function PaymentModal({ total, onClose, onPay, saving }) {
                     )}
 
                     {method !== 'cash' && (
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Referencia</label>
-                            <input type="text" value={reference} onChange={e => setReference(e.target.value)} placeholder="Últimos 4 dígitos / referencia"
-                                className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                        <div className="space-y-3">
+                            <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: '#f0dde3', backgroundColor: LIGHT }}>
+                                <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">Datos bancarios para la gestión</p>
+                                <p className="text-sm font-black text-slate-800">
+                                    {method === 'mobile' ? 'Pago Móvil' : 'Transferencia bancaria'}
+                                </p>
+                                <div className="text-sm space-y-2">
+                                    {bankRows.map(row => (
+                                        <div key={row.label} className="flex flex-wrap items-center gap-1.5 py-0.5">
+                                            <span className="text-slate-500 min-w-[70px]">{row.label}:</span>
+                                            <span className="font-bold text-slate-800 flex-1 break-all">{row.value}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(row.value, row.label)}
+                                                className="text-xs font-bold px-2 py-1 rounded-md"
+                                                style={{ color: copied === row.label ? '#16a34a' : PINK }}
+                                            >
+                                                {copied === row.label ? '¡Copiado!' : 'Copiar'}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Referencia</label>
+                                <input type="text" value={reference} onChange={e => setReference(e.target.value)} placeholder="Últimos 4 dígitos / referencia"
+                                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={{ borderColor: '#f0dde3' }} />
+                            </div>
                         </div>
                     )}
 

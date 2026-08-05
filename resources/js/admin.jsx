@@ -15,9 +15,9 @@ const AUTH_KEY = 'julls_admin_auth';
 const MIN_QTY = 12;
 
 const DEFAULT_PRODUCTS = [
-    { id: 1, name: 'Choco Crunch', tag: 'BESTSELLER', desc: 'Galleta rellena de chocolate y avellanas.', price: 4.80, image: '/313790.jpg', image2: '/313792.jpg', weight: '150g / 6 unid.', shelf: '90 días', flavors: ['Chocolate Negro', 'Chocolate con Leche'] },
-    { id: 2, name: 'Velvet Cream', tag: 'PREMIUM', desc: 'Masa Red Velvet con centro cremoso.', price: 5.50, image: '/313792.jpg', image2: '/313794.jpg', weight: '150g / 6 unid.', shelf: '90 días', flavors: ['Crema Vainilla', 'Crema Fresa'] },
-    { id: 3, name: 'Minis Crunch', tag: 'BITE-SIZE', desc: 'Sin relleno. Alta rotación, empaque snack.', price: 1.90, image: '/313794.jpg', image2: '/313790.jpg', weight: 'Stand-up Pouch', shelf: '90 días', flavors: ['Clásica', 'Canela'] },
+    { id: 1, name: 'Choco Crunch', tag: 'BESTSELLER', desc: 'Galleta rellena de chocolate y avellanas.', price: 4.80, stock: 100, image: '/313790.jpg', image2: '/313792.jpg', weight: '150g / 6 unid.', shelf: '90 días', flavors: ['Chocolate Negro', 'Chocolate con Leche'] },
+    { id: 2, name: 'Velvet Cream', tag: 'PREMIUM', desc: 'Masa Red Velvet con centro cremoso.', price: 5.50, stock: 80, image: '/313792.jpg', image2: '/313794.jpg', weight: '150g / 6 unid.', shelf: '90 días', flavors: ['Crema Vainilla', 'Crema Fresa'] },
+    { id: 3, name: 'Minis Crunch', tag: 'BITE-SIZE', desc: 'Sin relleno. Alta rotación, empaque snack.', price: 1.90, stock: 120, image: '/313794.jpg', image2: '/313790.jpg', weight: 'Stand-up Pouch', shelf: '90 días', flavors: ['Clásica', 'Canela'] },
 ];
 
 const TAGS = ['BESTSELLER', 'PREMIUM', 'BITE-SIZE', 'NUEVO', 'OFERTA', 'LIMITADO'];
@@ -178,7 +178,7 @@ function ProductForm({ product, onChange, onDelete, index }) {
                     : <div className="w-12 h-12 rounded-xl flex-shrink-0 bg-slate-100 flex items-center justify-center"><Upload size={16} className="text-slate-300" /></div>}
                 <div className="flex-1 min-w-0">
                     <p className="font-black text-slate-800 truncate">{product.name || 'Sin nombre'}</p>
-                    <p className="text-sm font-bold" style={{ color: PINK }}>${Number(product.price).toFixed(2)} · mín. {MIN_QTY} uds.</p>
+                    <p className="text-sm font-bold" style={{ color: PINK }}>${Number(product.price).toFixed(2)} · stock {product.stock ?? 0} uds.</p>
                 </div>
                 <span className="text-xs font-bold text-white px-2 py-1 rounded-md mr-2" style={{ backgroundColor: PINK }}>{product.tag}</span>
                 {open ? <ChevronUp size={18} className="text-slate-400 flex-shrink-0" /> : <ChevronDown size={18} className="text-slate-400 flex-shrink-0" />}
@@ -196,6 +196,7 @@ function ProductForm({ product, onChange, onDelete, index }) {
                             </select>
                         </div>
                         <Field label="Precio ($)" type="number" step="0.01" value={product.price} onChange={v => update('price', v)} />
+                        <Field label="Stock (uds.)" type="number" min="0" value={product.stock ?? ''} onChange={v => update('stock', Number(v) || 0)} />
                         <Field label="Peso / Presentación" value={product.weight} onChange={v => update('weight', v)} />
                         <Field label="Vida de anaquel" value={product.shelf} onChange={v => update('shelf', v)} />
                     </div>
@@ -259,33 +260,54 @@ function ProductForm({ product, onChange, onDelete, index }) {
 
 // ── Panel de Pedidos ───────────────────────────────────────────────────────
 const STATUS_COLORS = {
-    pendiente: { bg: '#fff7ed', text: '#c2410c', icon: <Clock size={13} /> },
-    confirmado: { bg: '#f0fdf4', text: '#15803d', icon: <CheckCircle size={13} /> },
-    cancelado: { bg: '#fef2f2', text: '#b91c1c', icon: <XCircle size={13} /> },
+    pending:   { bg: '#fff7ed', text: '#c2410c', icon: <Clock size={13} />, label: 'Pendiente' },
+    paid:      { bg: '#f0fdf4', text: '#15803d', icon: <CheckCircle size={13} />, label: 'Pagado' },
+    partial:   { bg: '#eff6ff', text: '#2563eb', icon: <Clock size={13} />, label: 'Parcial' },
+    cancelled: { bg: '#fef2f2', text: '#b91c1c', icon: <XCircle size={13} />, label: 'Rechazado' },
 };
 
 function OrdersPanel() {
-    const [orders, setOrders] = useState(() => {
-        try { return JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]'); } catch { return []; }
-    });
+    const [orders, setOrders] = useState([]);
     const [expanded, setExpanded] = useState(null);
     const [filter, setFilter] = useState('todos');
+    const [loading, setLoading] = useState(true);
 
-    const updateStatus = (id, status) => {
-        const updated = orders.map(o => o.id === id ? { ...o, status } : o);
-        setOrders(updated);
-        localStorage.setItem(ORDERS_KEY, JSON.stringify(updated));
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    const fetchOrders = () => {
+        fetch('/api/pos/orders')
+            .then(r => r.json())
+            .then(d => { if (Array.isArray(d)) setOrders(d); })
+            .catch(() => {})
+            .finally(() => setLoading(false));
     };
 
-    const deleteOrder = (id) => {
-        if (!confirm('¿Eliminar este pedido?')) return;
-        const updated = orders.filter(o => o.id !== id);
-        setOrders(updated);
-        localStorage.setItem(ORDERS_KEY, JSON.stringify(updated));
+    useEffect(() => { fetchOrders(); }, []);
+
+    const approve = (id) => {
+        if (!confirm('¿Aprobar este pedido? Se descontará el stock.')) return;
+        fetch(`/api/pos/orders/${id}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+        }).then(() => fetchOrders());
+    };
+
+    const reject = (id) => {
+        if (!confirm('¿Rechazar este pedido?')) return;
+        fetch(`/api/pos/orders/${id}/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+        }).then(() => fetchOrders());
     };
 
     const filtered = filter === 'todos' ? orders : orders.filter(o => o.status === filter);
-    const totalRevenue = orders.filter(o => o.status !== 'cancelado').reduce((s, o) => s + o.total, 0);
+    const totalRevenue = orders.filter(o => o.status === 'paid' || o.status === 'partial').reduce((s, o) => s + (o.paid || 0), 0);
+
+    const formatDate = (d) => {
+        if (!d) return '';
+        const date = new Date(d);
+        return date.toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' });
+    };
 
     return (
         <div className="space-y-4">
@@ -293,7 +315,7 @@ function OrdersPanel() {
             <div className="grid grid-cols-3 gap-3">
                 {[
                     { label: 'Total pedidos', value: orders.length, color: PINK },
-                    { label: 'Pendientes', value: orders.filter(o => o.status === 'pendiente').length, color: '#c2410c' },
+                    { label: 'Pendientes', value: orders.filter(o => o.status === 'pending').length, color: '#c2410c' },
                     { label: 'Ingresos', value: `$${totalRevenue.toFixed(2)}`, color: '#15803d' },
                 ].map(s => (
                     <div key={s.label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: '#f0dde3' }}>
@@ -305,20 +327,27 @@ function OrdersPanel() {
 
             {/* Filtros */}
             <div className="flex gap-2 flex-wrap">
-                {['todos', 'pendiente', 'confirmado', 'cancelado'].map(f => (
-                    <button key={f} onClick={() => setFilter(f)}
-                        className="px-4 py-1 rounded-full text-sm font-bold capitalize transition-all"
-                        style={{ backgroundColor: filter === f ? PINK : 'transparent', color: filter === f ? '#fff' : PINK, border: `2px solid ${PINK}` }}>
-                        {f}
+                {[
+                    { k: 'todos', label: 'Todos' },
+                    { k: 'pending', label: 'Pendientes' },
+                    { k: 'paid', label: 'Pagados' },
+                    { k: 'cancelled', label: 'Rechazados' },
+                ].map(f => (
+                    <button key={f.k} onClick={() => setFilter(f.k)}
+                        className="px-4 py-1 rounded-full text-sm font-bold transition-all"
+                        style={{ backgroundColor: filter === f.k ? PINK : 'transparent', color: filter === f.k ? '#fff' : PINK, border: `2px solid ${PINK}` }}>
+                        {f.label}
                     </button>
                 ))}
             </div>
 
             {/* Lista */}
-            {filtered.length === 0 ? (
+            {loading ? (
+                <div className="text-center py-16 text-slate-400"><p>Cargando...</p></div>
+            ) : filtered.length === 0 ? (
                 <div className="text-center py-16 text-slate-400">
                     <ShoppingBag size={40} className="mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">No hay pedidos {filter !== 'todos' ? filter + 's' : ''}.</p>
+                    <p className="font-medium">No hay pedidos {filter !== 'todos' ? '' : ''}.</p>
                 </div>
             ) : filtered.map(order => (
                 <div key={order.id} className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: '#f0dde3' }}>
@@ -326,16 +355,16 @@ function OrdersPanel() {
                     <button className="w-full flex items-center gap-3 p-4 text-left hover:bg-pink-50 transition-colors"
                         onClick={() => setExpanded(expanded === order.id ? null : order.id)}>
                         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0" style={{ backgroundColor: PINK }}>
-                            {order.client?.name?.charAt(0)?.toUpperCase() || '?'}
+                            {(order.customer_name || '?').charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="font-black text-slate-800 truncate">{order.client?.name || 'Cliente desconocido'}</p>
-                            <p className="text-xs text-slate-400">{order.date} · {order.items?.length} producto(s)</p>
+                            <p className="font-black text-slate-800 truncate">{order.customer_name || 'Cliente desconocido'}</p>
+                            <p className="text-xs text-slate-400">{formatDate(order.created_at)} · {order.items?.length} producto(s)</p>
                         </div>
-                        <span className="font-black text-sm mr-2" style={{ color: PINK }}>${order.total?.toFixed(2)}</span>
+                        <span className="font-black text-sm mr-2" style={{ color: PINK }}>${Number(order.total).toFixed(2)}</span>
                         <span className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full capitalize"
                             style={{ backgroundColor: STATUS_COLORS[order.status]?.bg, color: STATUS_COLORS[order.status]?.text }}>
-                            {STATUS_COLORS[order.status]?.icon} {order.status}
+                            {STATUS_COLORS[order.status]?.icon} {STATUS_COLORS[order.status]?.label || order.status}
                         </span>
                         {expanded === order.id ? <ChevronUp size={16} className="text-slate-400 flex-shrink-0" /> : <ChevronDown size={16} className="text-slate-400 flex-shrink-0" />}
                     </button>
@@ -343,14 +372,26 @@ function OrdersPanel() {
                     {/* Detalle */}
                     {expanded === order.id && (
                         <div className="border-t p-4 space-y-4" style={{ borderColor: '#f0dde3' }}>
-                            {/* Info cliente */}
+                            {/* Info */}
                             <div className="bg-slate-50 rounded-xl p-3 text-sm space-y-1">
-                                <p className="font-bold text-slate-700">{order.client?.name}</p>
-                                {order.client?.code && <p className="text-slate-500">Código: {order.client.code}</p>}
-                                {order.client?.phone && <p className="text-slate-500">Tel: {order.client.phone}</p>}
-                                {order.client?.address && <p className="text-slate-500">Dir: {order.client.address}</p>}
+                                <p className="font-bold text-slate-700">{order.customer_name || 'Cliente desconocido'}</p>
+                                {order.customer_phone && <p className="text-slate-500">Tel: {order.customer_phone}</p>}
+                                {order.table && <p className="text-slate-500">Mesa: {order.table}</p>}
                                 {order.notes && <p className="text-slate-500 italic">Nota: {order.notes}</p>}
                             </div>
+
+                            {/* Pagos */}
+                            {order.payments?.length > 0 && (
+                                <div className="text-sm space-y-1">
+                                    <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">Pagos / referencias</p>
+                                    {order.payments.map((p, i) => (
+                                        <div key={i} className="flex justify-between">
+                                            <span className="text-slate-500 capitalize">{p.method}{p.reference ? ` · Ref: ${p.reference}` : ''}</span>
+                                            <span className="font-bold" style={{ color: PINK }}>${Number(p.amount).toFixed(2)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
                             {/* Tabla de productos */}
                             <table className="w-full text-sm">
@@ -366,7 +407,7 @@ function OrdersPanel() {
                                     {order.items?.map((item, i) => (
                                         <tr key={i} className="border-b" style={{ borderColor: '#f0dde3' }}>
                                             <td className="py-2 font-semibold text-slate-800">{item.name}</td>
-                                            <td className="py-2 text-center text-slate-500">{item.flavor}</td>
+                                            <td className="py-2 text-center text-slate-500">{item.flavor || '—'}</td>
                                             <td className="py-2 text-center text-slate-600">{item.qty}</td>
                                             <td className="py-2 text-right font-bold" style={{ color: PINK }}>${(item.price * item.qty).toFixed(2)}</td>
                                         </tr>
@@ -374,30 +415,26 @@ function OrdersPanel() {
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colSpan={3} className="pt-2 font-black text-slate-700">TOTAL</td>
-                                        <td className="pt-2 text-right font-black text-lg" style={{ color: PINK }}>${order.total?.toFixed(2)}</td>
+                                        <td colSpan={2} className="pt-2 font-black text-slate-700">TOTAL</td>
+                                        <td className="pt-2 text-center font-black text-slate-700">{order.items?.reduce((s, i) => s + i.qty, 0)}</td>
+                                        <td className="pt-2 text-right font-black text-lg" style={{ color: PINK }}>${Number(order.total).toFixed(2)}</td>
                                     </tr>
                                 </tfoot>
                             </table>
 
                             {/* Acciones */}
-                            <div className="flex gap-2 flex-wrap">
-                                {['pendiente', 'confirmado', 'cancelado'].map(s => (
-                                    <button key={s} onClick={() => updateStatus(order.id, s)}
-                                        className="px-4 py-2 rounded-full text-xs font-bold capitalize transition-all"
-                                        style={{
-                                            backgroundColor: order.status === s ? STATUS_COLORS[s].text : 'transparent',
-                                            color: order.status === s ? '#fff' : STATUS_COLORS[s].text,
-                                            border: `2px solid ${STATUS_COLORS[s].text}`
-                                        }}>
-                                        {s}
+                            {order.status === 'pending' && (
+                                <div className="flex gap-2 flex-wrap">
+                                    <button onClick={() => approve(order.id)}
+                                        className="px-4 py-2 rounded-full text-xs font-bold text-white bg-green-600 hover:bg-green-700 transition-all">
+                                        <CheckCircle size={12} className="inline mr-1" /> Aprobar
                                     </button>
-                                ))}
-                                <button onClick={() => deleteOrder(order.id)}
-                                    className="ml-auto px-4 py-2 rounded-full text-xs font-bold text-red-400 border border-red-200 hover:bg-red-50">
-                                    <Trash2 size={12} className="inline mr-1" /> Eliminar
-                                </button>
-                            </div>
+                                    <button onClick={() => reject(order.id)}
+                                        className="px-4 py-2 rounded-full text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-all">
+                                        <XCircle size={12} className="inline mr-1" /> Rechazar
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -875,7 +912,7 @@ function AdminApp() {
 
     const updateProduct = (index, updated) => setProducts(prev => prev.map((p, i) => i === index ? updated : p));
     const deleteProduct = (index) => { if (!confirm('¿Eliminar este producto?')) return; setProducts(prev => prev.filter((_, i) => i !== index)); };
-    const addProduct = () => setProducts(prev => [...prev, { id: Date.now(), name: 'Nuevo Producto', tag: 'NUEVO', desc: '', price: 0, image: '', image2: '', weight: '', shelf: '90 días', flavors: [] }]);
+    const addProduct = () => setProducts(prev => [...prev, { id: Date.now(), name: 'Nuevo Producto', tag: 'NUEVO', desc: '', price: 0, stock: 0, image: '', image2: '', weight: '', shelf: '90 días', flavors: [] }]);
     const reset = () => { if (!confirm('¿Restaurar productos por defecto?')) return; setProducts(DEFAULT_PRODUCTS); localStorage.removeItem(STORAGE_KEY); };
 
     return (

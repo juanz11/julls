@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PosController extends Controller
 {
@@ -33,10 +34,44 @@ class PosController extends Controller
 
     public function catalog()
     {
+        $this->syncAdminProducts();
+
         return response()->json([
             'categories' => Category::orderBy('sort_order')->get(),
             'products' => Product::with('category')->where('active', true)->orderBy('sort_order')->get(),
         ]);
+    }
+
+    private function syncAdminProducts()
+    {
+        $json = Storage::disk('local')->get('products.json');
+        if (!$json) return;
+
+        $stored = json_decode($json, true);
+        if (!is_array($stored) || empty($stored)) return;
+
+        $defaultCategory = Category::orderBy('sort_order')->value('id');
+
+        Product::unguard();
+
+        foreach ($stored as $p) {
+            $data = [
+                'name' => $p['name'] ?? 'Sin nombre',
+                'price' => floatval($p['price'] ?? 0),
+                'stock' => intval($p['stock'] ?? 0),
+                'image' => $p['image'] ?? null,
+                'flavors' => $p['flavors'] ?? [],
+                'active' => true,
+            ];
+
+            if ($defaultCategory) {
+                $data['category_id'] = $defaultCategory;
+            }
+
+            Product::updateOrCreate(['id' => $p['id']], $data);
+        }
+
+        Product::reguard();
     }
 
     public function orders()
@@ -76,10 +111,14 @@ class PosController extends Controller
             'payments.*.reference' => 'nullable|string',
         ]);
 
-        return DB::transaction(function () use ($data) {
+        $hasPendingPayment = collect($data['payments'] ?? [])->contains(function ($p) {
+            return in_array($p['method'] ?? '', ['mobile', 'transfer']);
+        });
+
+        return DB::transaction(function () use ($data, $hasPendingPayment) {
             $order = Order::create([
                 'type' => 'pos',
-                'status' => 'paid',
+                'status' => 'pending',
                 'customer_name' => $data['customer_name'] ?? null,
                 'customer_phone' => $data['customer_phone'] ?? null,
                 'table' => $data['table'] ?? null,
@@ -89,7 +128,7 @@ class PosController extends Controller
                 'tax' => $data['tax'] ?? 0,
                 'discount' => $data['discount'] ?? 0,
                 'total' => $data['total'],
-                'paid' => collect($data['payments'] ?? [])->sum('amount'),
+                'paid' => 0,
             ]);
 
             foreach ($data['items'] as $item) {
@@ -107,16 +146,6 @@ class PosController extends Controller
                     'qty' => $item['qty'],
                     'price' => $item['price'],
                 ]);
-
-                $product->decrementStock($item['qty'], $flavor);
-
-                $product->inventoryMovements()->create([
-                    'type' => 'sale',
-                    'qty' => -$item['qty'],
-                    'flavor' => $flavor,
-                    'notes' => 'Venta POS #' . $order->id,
-                    'order_id' => $order->id,
-                ]);
             }
 
             foreach ($data['payments'] ?? [] as $payment) {
@@ -130,17 +159,82 @@ class PosController extends Controller
                 ]);
             }
 
-            if ($order->paid >= $order->total) {
-                $order->status = 'paid';
-            } elseif ($order->paid > 0) {
-                $order->status = 'partial';
-            } else {
+            $paid = $order->payments->sum('amount');
+
+            if ($hasPendingPayment) {
                 $order->status = 'pending';
+                $order->paid = 0;
+            } else {
+                $order->paid = $paid;
+                foreach ($data['items'] as $item) {
+                    $product = Product::find($item['product_id']);
+                    $flavor = $item['flavor'] ?? null;
+                    $product->decrementStock($item['qty'], $flavor);
+                    $product->inventoryMovements()->create([
+                        'type' => 'sale',
+                        'qty' => -$item['qty'],
+                        'flavor' => $flavor,
+                        'notes' => 'Venta POS #' . $order->id,
+                        'order_id' => $order->id,
+                    ]);
+                }
+                if ($order->paid >= $order->total) {
+                    $order->status = 'paid';
+                } elseif ($order->paid > 0) {
+                    $order->status = 'partial';
+                } else {
+                    $order->status = 'pending';
+                }
             }
             $order->save();
 
             return response()->json($order->load(['items.product', 'payments']), 201);
         });
+    }
+
+    public function approveOrder(Order $order)
+    {
+        if ($order->status !== 'pending') {
+            return response()->json(['error' => 'El pedido no está pendiente'], 422);
+        }
+
+        return DB::transaction(function () use ($order) {
+            foreach ($order->items as $item) {
+                $product = Product::find($item->product_id);
+                if (!$product) continue;
+
+                if ($product->stockFor($item->flavor) < $item->qty) {
+                    throw new \Exception("Stock insuficiente para {$product->name}" . ($item->flavor ? " ({$item->flavor})" : ''));
+                }
+
+                $product->decrementStock($item->qty, $item->flavor);
+                $product->inventoryMovements()->create([
+                    'type' => 'sale',
+                    'qty' => -$item->qty,
+                    'flavor' => $item->flavor,
+                    'notes' => 'Aprobación pedido #' . $order->id,
+                    'order_id' => $order->id,
+                ]);
+            }
+
+            $order->paid = $order->payments->sum('amount') ?: $order->total;
+            $order->status = 'paid';
+            $order->save();
+
+            return response()->json($order->load(['items.product', 'payments']));
+        });
+    }
+
+    public function rejectOrder(Order $order)
+    {
+        if ($order->status !== 'pending') {
+            return response()->json(['error' => 'El pedido no está pendiente'], 422);
+        }
+
+        $order->status = 'cancelled';
+        $order->save();
+
+        return response()->json($order->load(['items.product', 'payments']));
     }
 
     public function storePayment(Request $request, Order $order)
