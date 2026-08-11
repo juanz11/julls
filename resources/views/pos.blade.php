@@ -7,8 +7,8 @@
         <title>Terminal de Venta · JULLS</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700,900" rel="stylesheet" />
-        @viteReactRefresh
-        @vite(['resources/css/app.css', 'resources/js/pos.jsx'])
+        <link rel="stylesheet" href="{{ asset('build/assets/app-CQjrit6E.css') }}">
+        <script type="module" src="{{ asset('build/assets/pos-C-jwHbvR.js') }}"></script>
     </head>
     <body class="antialiased">
         <div id="pos"></div>
