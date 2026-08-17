@@ -7,8 +7,7 @@
         <title>Admin · JULLS</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700,900" rel="stylesheet" />
-        <link rel="stylesheet" href="{{ asset('build/assets/app-CQjrit6E.css') }}">
-        <script type="module" src="{{ asset('build/assets/admin-BwU_6I-6.js') }}"></script>
+        @vite(['resources/js/admin.jsx'])
     </head>
     <body>
         <div id="admin"></div>

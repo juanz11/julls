@@ -175,12 +175,15 @@
                 return;
             }
 
-            const codigo = generateCode();
-            const mensaje = `¡Hola ${nombreDestino}! Se te ha invitado un obsequio de parte de ${nombre}. 🍪✨\n\n` +
-                            `Cupón: ${codigo}\n` +
-                            `Cédula del remitente: ${cedula}\n` +
-                            `Número del remitente: ${numero}\n\n` +
-                            `Presenta este mensaje para canjearlo en JULLS.`;
+            const codigo = 'JULLS-CONEXION';
+            const mensaje = `¡Hola, ${nombreDestino}! 🎉\n\n` +
+                            `Adivina qué... ${nombre} cree que te mereces una pausa dulce y te acaba de regalar un café en Julls ☕💖.\n\n` +
+                            `Tu ticket de cortesía:\n` +
+                            `☕ Válido por 1 café (Americano, Expresso, Latte o Cappuccino).\n` +
+                            `🎟️ Código de canje: ${codigo}\n\n` +
+                            `💡 Tip Julls: ¡Dile a ${nombre} que vengan juntos y acompañenlo con nuestras ricas galletas! 🍪\n\n` +
+                            `Muestra este chat en caja para activar tu regalo. ¡Nos vemos en el local!\n\n` +
+                            `@jullsreposteria`;
 
             const url = `https://wa.me/${to}?text=${encodeURIComponent(mensaje)}`;
             window.open(url, '_blank');

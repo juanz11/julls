@@ -361,7 +361,7 @@ const JullsApp = () => {
                                         <h3 className="text-lg font-black text-slate-900 mt-2">{p.name}</h3>
                                         <p className="text-slate-500 text-sm mt-1 mb-4">{p.desc}</p>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xl font-black" style={{ color: PINK }}>${p.price.toFixed(2)}</span>
+                                            <span className="text-xl font-black" style={{ color: PINK }}>${Number(p.price).toFixed(2)}</span>
                                             <button
                                                 onClick={() => { window.location.href = '/menu'; }}
                                                 className="text-sm font-bold px-4 py-2 rounded-full text-white"
@@ -411,7 +411,7 @@ const JullsApp = () => {
                                                 <h3 className="text-xl font-black text-slate-900 mt-2">{p.name}</h3>
                                                 <p className="text-slate-500 text-sm mt-1">{p.desc}</p>
                                             </div>
-                                            <span className="text-2xl font-black ml-4 flex-shrink-0" style={{ color: PINK }}>${p.price.toFixed(2)}</span>
+                                            <span className="text-2xl font-black ml-4 flex-shrink-0" style={{ color: PINK }}>${Number(p.price).toFixed(2)}</span>
                                         </div>
                                         <div className="flex gap-2 flex-wrap mt-3 mb-1">
                                             <span className="text-xs text-slate-400 font-medium flex items-center gap-1"><Package size={12} /> {p.weight}</span>
@@ -606,7 +606,7 @@ const JullsApp = () => {
                                                                 className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs" style={{ backgroundColor: PINK }}>+</button>
                                                         </div>
                                                     </td>
-                                                    <td className="px-3 py-2 text-right font-bold" style={{ color: PINK }}>${(item.price * item.qty).toFixed(2)}</td>
+                                                    <td className="px-3 py-2 text-right font-bold" style={{ color: PINK }}>${Number(item.price * item.qty).toFixed(2)}</td>
                                                     <td className="px-2 py-2">
                                                         <button onClick={() => setCart(prev => prev.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600">
                                                             <X size={14} />
@@ -618,7 +618,7 @@ const JullsApp = () => {
                                         <tfoot>
                                             <tr className="border-t font-black" style={{ borderColor: '#f0dde3' }}>
                                                 <td colSpan={3} className="px-3 py-3 text-slate-700">TOTAL</td>
-                                                <td className="px-3 py-3 text-right text-lg" style={{ color: PINK }}>${totalPrice.toFixed(2)}</td>
+                                                <td className="px-3 py-3 text-right text-lg" style={{ color: PINK }}>${Number(totalPrice).toFixed(2)}</td>
                                                 <td></td>
                                             </tr>
                                         </tfoot>
@@ -648,7 +648,7 @@ const JullsApp = () => {
                                                 <p className="font-bold text-slate-800 text-sm truncate">{item.name}</p>
                                                 <p className="text-xs text-slate-400">{item.flavor}</p>
                                                 <p className="text-xs text-slate-400">mín. {MIN_QTY} uds.</p>
-                                                <p className="text-sm font-black mt-1" style={{ color: PINK }}>${(item.price * item.qty).toFixed(2)}</p>
+                                                <p className="text-sm font-black mt-1" style={{ color: PINK }}>${Number(item.price * item.qty).toFixed(2)}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <button onClick={() => updateQty(item.id, item.flavor, -MIN_QTY)} className="w-7 h-7 rounded-full border flex items-center justify-center" style={{ borderColor: PINK }}>
@@ -665,7 +665,7 @@ const JullsApp = () => {
                                 <div className="p-6 border-t" style={{ borderColor: '#f0dde3' }}>
                                     <div className="flex justify-between items-center mb-4">
                                         <span className="font-bold text-slate-700">Total</span>
-                                        <span className="text-2xl font-black" style={{ color: PINK }}>${totalPrice.toFixed(2)}</span>
+                                        <span className="text-2xl font-black" style={{ color: PINK }}>${Number(totalPrice).toFixed(2)}</span>
                                     </div>
                                     <button
                                         onClick={() => setReviewMode(true)}
@@ -702,7 +702,7 @@ const JullsApp = () => {
                                 <div className="mt-auto pt-4 border-t" style={{ borderColor: '#f0dde3' }}>
                                     <div className="flex justify-between mb-3">
                                         <span className="font-bold text-slate-700">Total del pedido</span>
-                                        <span className="font-black text-lg" style={{ color: PINK }}>${totalPrice.toFixed(2)}</span>
+                                        <span className="font-black text-lg" style={{ color: PINK }}>${Number(totalPrice).toFixed(2)}</span>
                                     </div>
                                     <button type="submit" className="w-full py-3 rounded-full font-bold text-white" style={{ backgroundColor: PINK }}>
                                         Confirmar Pedido
