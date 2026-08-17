@@ -11,7 +11,7 @@ class Product extends Model
 
     protected $fillable = [
         'category_id', 'name', 'tag', 'description', 'price', 'cost',
-        'image', 'weight', 'shelf', 'flavors', 'stock', 'stock_by_flavor',
+        'image', 'image2', 'weight', 'shelf', 'flavors', 'stock', 'stock_by_flavor',
         'active', 'sort_order',
     ];
 

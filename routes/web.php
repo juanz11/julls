@@ -46,6 +46,14 @@ Route::prefix('api/pos')->group(function () {
     Route::post('/orders/{order}/reject', [\App\Http\Controllers\PosController::class, 'rejectOrder']);
 });
 
+// API CRUD para productos (admin)
+Route::prefix('api/products')->group(function () {
+    Route::get('/', [\App\Http\Controllers\ProductController::class, 'index']);
+    Route::post('/', [\App\Http\Controllers\ProductController::class, 'store']);
+    Route::put('/{product}', [\App\Http\Controllers\ProductController::class, 'update']);
+    Route::delete('/{product}', [\App\Http\Controllers\ProductController::class, 'destroy']);
+});
+
 // API para el presupuesto
 Route::get('/api/presupuesto', function () {
     if (Storage::disk('local')->exists('presupuesto.json')) {
