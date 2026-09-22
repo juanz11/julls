@@ -42,7 +42,7 @@ function PosApp() {
         fetch('/api/pos/catalog')
             .then(r => r.json())
             .then(data => {
-                if (data?.products) {
+                if (data?.products?.length) {
                     setCategories(data.categories || DEFAULT_CATEGORIES);
                     setProducts(data.products.map(p => ({
                         ...p,

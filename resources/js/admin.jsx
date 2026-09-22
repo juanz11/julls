@@ -886,7 +886,7 @@ function AdminApp() {
     // Cargar del servidor al montar
     useEffect(() => {
         const load = (key) => fetch(`/api/store/${key}`).then(r => r.json()).catch(() => null);
-        load('products').then(d => { if (d && Array.isArray(d)) { setProducts(d); localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } });
+        load('products').then(d => { if (d && Array.isArray(d) && d.length) { setProducts(d); localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } });
         load('clients').then(d => { if (d && Array.isArray(d)) { setClients(d); localStorage.setItem(CLIENTS_KEY, JSON.stringify(d)); } });
     }, []);
 
@@ -962,7 +962,9 @@ function AdminApp() {
                         <div className="flex items-center justify-between mb-2">
                             <h2 className="font-black text-slate-800 text-lg">{products.length} productos · mín. {MIN_QTY} uds. por pedido</h2>
                             <div className="flex gap-2">
-                                <button onClick={reset} className="text-xs text-slate-400 hover:text-slate-600 underline">Restaurar defaults</button>
+                                <button onClick={reset} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border-2" style={{ borderColor: PINK, color: PINK }}>
+                                    <Package size={15} /> Cargar productos
+                                </button>
                                 <button onClick={addProduct} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-white" style={{ backgroundColor: PINK }}>
                                     <Plus size={15} /> Agregar producto
                                 </button>
