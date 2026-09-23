@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 Route::get('/', function () {
@@ -77,9 +78,25 @@ Route::post('/api/upload-image', function (Request $request) {
 });
 
 // API genérica para datos de la tienda
+// 'products' y 'clients' se alimentan del sistema admin (julls-orden-de-pago);
+// se guarda una copia local como respaldo si el admin no está disponible.
 foreach (['products', 'clients', 'orders', 'footer', 'banner'] as $key) {
     Route::get("/api/store/{$key}", function () use ($key) {
         $file = "{$key}.json";
+
+        if (in_array($key, ['products', 'clients'])) {
+            try {
+                $base = rtrim(env('ADMIN_API_URL', 'http://localhost:8001'), '/');
+                $res = Http::timeout(5)->get("{$base}/api/store/{$key}");
+                if ($res->ok() && is_array($res->json())) {
+                    Storage::disk('local')->put($file, json_encode($res->json()));
+                    return response()->json($res->json());
+                }
+            } catch (\Throwable $e) {
+                // Admin no disponible: se usa la copia local
+            }
+        }
+
         if (Storage::disk('local')->exists($file)) {
             return response()->json(json_decode(Storage::disk('local')->get($file), true));
         }

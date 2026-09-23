@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 class PosController extends Controller
@@ -44,10 +45,23 @@ class PosController extends Controller
 
     private function syncAdminProducts()
     {
-        $json = Storage::disk('local')->get('products.json');
-        if (!$json) return;
+        // Los productos se gestionan en el sistema admin (julls-orden-de-pago)
+        $stored = null;
+        try {
+            $base = rtrim(env('ADMIN_API_URL', 'http://localhost:8001'), '/');
+            $res = Http::timeout(5)->get("{$base}/api/store/products");
+            if ($res->ok() && is_array($res->json())) {
+                $stored = $res->json();
+                Storage::disk('local')->put('products.json', json_encode($stored));
+            }
+        } catch (\Throwable $e) {
+            // Admin no disponible: se usa la copia local
+        }
 
-        $stored = json_decode($json, true);
+        if (!is_array($stored) || empty($stored)) {
+            $json = Storage::disk('local')->get('products.json');
+            $stored = $json ? json_decode($json, true) : null;
+        }
         if (!is_array($stored) || empty($stored)) return;
 
         $defaultCategory = Category::orderBy('sort_order')->value('id');
@@ -57,9 +71,13 @@ class PosController extends Controller
         foreach ($stored as $p) {
             $data = [
                 'name' => $p['name'] ?? 'Sin nombre',
+                'tag' => $p['tag'] ?? null,
+                'description' => $p['desc'] ?? $p['description'] ?? null,
                 'price' => floatval($p['price'] ?? 0),
                 'stock' => intval($p['stock'] ?? 0),
                 'image' => $p['image'] ?? null,
+                'weight' => $p['weight'] ?? null,
+                'shelf' => $p['shelf'] ?? null,
                 'flavors' => $p['flavors'] ?? [],
                 'active' => true,
             ];
