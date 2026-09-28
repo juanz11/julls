@@ -3,7 +3,7 @@ import '../css/app.css';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Search, X, CreditCard, Banknote, Smartphone, ArrowRightLeft, Trash2, Plus, Minus, ShoppingBag, CheckCircle2 } from 'lucide-react';
+import { Search, X, CreditCard, Banknote, Smartphone, ArrowRightLeft, Trash2, Plus, Minus, ShoppingBag, CheckCircle2, Receipt } from 'lucide-react';
 
 const PINK = '#bf7691';
 const LIGHT = '#fdf5f7';
@@ -37,6 +37,7 @@ function PosApp() {
     const [message, setMessage] = useState('');
     const [payOpen, setPayOpen] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [successOrder, setSuccessOrder] = useState(null);
 
     useEffect(() => {
         fetch('/api/pos/catalog')
@@ -141,8 +142,7 @@ function PosApp() {
             setCart([]);
             setSelectedLine(null);
             setPayOpen(false);
-            setMessage(`Factura #${order.id} registrada`);
-            setTimeout(() => setMessage(''), 3000);
+            setSuccessOrder(order);
         } catch (e) {
             alert(e.message);
         } finally {
@@ -328,6 +328,14 @@ function PosApp() {
                     saving={saving}
                 />
             )}
+
+            {/* Success modal */}
+            {successOrder && (
+                <SuccessModal
+                    order={successOrder}
+                    onClose={() => setSuccessOrder(null)}
+                />
+            )}
         </div>
     );
 }
@@ -510,6 +518,36 @@ function PaymentModal({ total, onClose, onPay, saving }) {
                         {saving ? 'Guardando...' : `Confirmar pago $${formatMoney(numericAmount)}`}
                     </button>
                 </form>
+            </div>
+        </div>
+    );
+}
+
+function SuccessModal({ order, onClose }) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+                <div className="p-6 text-center space-y-4">
+                    <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+                        <CheckCircle2 size={40} className="text-green-600" />
+                    </div>
+                    <div>
+                        <h3 className="text-2xl font-black text-slate-800">¡Compra exitosa!</h3>
+                        <p className="text-slate-500 mt-1">Factura #{order.id}</p>
+                    </div>
+                    <div className="rounded-xl border p-4 space-y-2 text-left" style={{ borderColor: '#f0dde3', backgroundColor: LIGHT }}>
+                        <div className="flex justify-between text-sm"><span>Total</span><span className="font-black">${formatMoney(order.total)}</span></div>
+                        {order.delivery_city && (
+                            <div className="flex justify-between text-sm">
+                                <span>Delivery · {order.delivery_city}</span>
+                                <span className="font-bold" style={{ color: PINK }}>+${formatMoney(order.delivery_fee)}</span>
+                            </div>
+                        )}
+                    </div>
+                    <button onClick={onClose} className="w-full py-3 rounded-lg text-white font-bold" style={{ backgroundColor: PINK }}>
+                        Volver a la caja
+                    </button>
+                </div>
             </div>
         </div>
     );
