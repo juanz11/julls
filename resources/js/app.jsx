@@ -33,7 +33,18 @@ const FOOTER_CONFIG = {
 };
 const STORAGE_KEY = 'julls_products';
 const CLIENTS_KEY = 'julls_clients';
+const CATEGORIES_KEY = 'julls_categories';
 const MIN_QTY = 12;
+
+const DEFAULT_CATEGORIES = [
+    { icon: '🍪', label: 'Galletas' },
+    { icon: '🎂', label: 'Tartas' },
+    { icon: '🧁', label: 'Cupcakes' },
+    { icon: '🍫', label: 'Chocolate' },
+    { icon: '🎁', label: 'Regalos' },
+    { icon: '⭐', label: 'Novedades' },
+    { icon: '🏷️', label: 'Ofertas' },
+];
 
 const DEFAULT_PRODUCTS = [
     {
@@ -85,8 +96,11 @@ const JullsApp = () => {
             return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
         } catch { return DEFAULT_PRODUCTS; }
     });
-    const [clients] = useState(() => {
+    const [clients, setClients] = useState(() => {
         try { const s = localStorage.getItem(CLIENTS_KEY); return s ? JSON.parse(s) : []; } catch { return []; }
+    });
+    const [categories, setCategories] = useState(() => {
+        try { const s = localStorage.getItem(CATEGORIES_KEY); return s ? JSON.parse(s) : DEFAULT_CATEGORIES; } catch { return DEFAULT_CATEGORIES; }
     });
     const [selectedClient, setSelectedClient] = useState('');
     const [footerData, setFooterData] = useState(() => {
@@ -114,9 +128,11 @@ const JullsApp = () => {
         const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
         const load = (key) => fetch(`/api/store/${key}`).then(r => r.json()).catch(() => null);
 
-        Promise.all([load('products'), load('footer')]).then(([prods, foot]) => {
+        Promise.all([load('products'), load('footer'), load('clients'), load('categories')]).then(([prods, foot, cls, cats]) => {
             if (prods && Array.isArray(prods)) setProducts(prods);
             if (foot && foot.social) setFooterData(foot);
+            if (cls && Array.isArray(cls)) { setClients(cls); localStorage.setItem(CLIENTS_KEY, JSON.stringify(cls)); }
+            if (cats && Array.isArray(cats) && cats.length) { setCategories(cats); localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats)); }
         });
 
         const onStorage = () => {
@@ -232,15 +248,7 @@ const JullsApp = () => {
             <div className="w-full border-b bg-white" style={{ borderColor: '#f0dde3' }}>
                 <div className="max-w-6xl mx-auto px-4">
                     <div className="flex items-center justify-center gap-1 overflow-x-auto py-2 scrollbar-hide">
-                        {[
-                            { icon: '🍪', label: 'Galletas' },
-                            { icon: '🎂', label: 'Tartas' },
-                            { icon: '🧁', label: 'Cupcakes' },
-                            { icon: '🍫', label: 'Chocolate' },
-                            { icon: '🎁', label: 'Regalos' },
-                            { icon: '⭐', label: 'Novedades' },
-                            { icon: '🏷️', label: 'Ofertas' },
-                        ].map((cat) => (
+                        {categories.map((cat) => (
                             <button
                                 key={cat.label}
                                 onClick={() => setView('catalog')}

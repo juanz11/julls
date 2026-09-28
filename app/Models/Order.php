@@ -12,6 +12,7 @@ class Order extends Model
     protected $fillable = [
         'type', 'status', 'customer_name', 'customer_phone', 'table', 'account',
         'notes', 'subtotal', 'tax', 'discount', 'total', 'paid',
+        'delivery_city', 'delivery_fee',
     ];
 
     protected function casts(): array
@@ -22,6 +23,7 @@ class Order extends Model
             'discount' => 'float',
             'total' => 'float',
             'paid' => 'float',
+            'delivery_fee' => 'float',
         ];
     }
 

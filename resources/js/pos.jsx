@@ -105,7 +105,7 @@ function PosApp() {
         if (selectedLine === key) setSelectedLine(null);
     };
 
-    const pay = async ({ method, amount, received, reference }) => {
+    const pay = async ({ method, amount, received, reference, delivery_city, delivery_fee, grandTotal }) => {
         if (cart.length === 0) return;
         setSaving(true);
         try {
@@ -114,10 +114,12 @@ function PosApp() {
                 table: null,
                 account: null,
                 notes: null,
+                delivery_city: delivery_city || null,
+                delivery_fee: delivery_fee || 0,
                 subtotal: totals.subtotal,
                 tax: totals.tax,
                 discount: 0,
-                total: totals.total,
+                total: grandTotal ?? totals.total,
                 items: cart.map(i => ({
                     product_id: i.product_id,
                     name: i.name,
@@ -336,6 +338,25 @@ function PaymentModal({ total, onClose, onPay, saving }) {
     const [received, setReceived] = useState(formatMoney(total));
     const [reference, setReference] = useState('');
     const [copied, setCopied] = useState(null);
+    const [wantsDelivery, setWantsDelivery] = useState(false);
+    const [zones, setZones] = useState([]);
+    const [zoneId, setZoneId] = useState('');
+
+    useEffect(() => {
+        fetch('/api/store/delivery-zones')
+            .then(r => r.json())
+            .then(data => { if (Array.isArray(data)) setZones(data); })
+            .catch(() => {});
+    }, []);
+
+    const selectedZone = zones.find(z => String(z.id) === String(zoneId));
+    const deliveryFee = wantsDelivery && selectedZone ? Number(selectedZone.price) : 0;
+    const grandTotal = total + deliveryFee;
+
+    useEffect(() => {
+        setAmount(formatMoney(grandTotal));
+        setReceived(formatMoney(grandTotal));
+    }, [grandTotal]);
 
     const numericAmount = parseFloat(amount) || 0;
     const numericReceived = parseFloat(received) || 0;
@@ -344,10 +365,19 @@ function PaymentModal({ total, onClose, onPay, saving }) {
     const submit = (e) => {
         e.preventDefault();
         if (numericAmount <= 0) return;
-        onPay({ method, amount: numericAmount, received: numericReceived, reference });
+        if (wantsDelivery && !selectedZone) return;
+        onPay({
+            method,
+            amount: numericAmount,
+            received: numericReceived,
+            reference,
+            delivery_city: wantsDelivery ? selectedZone?.name : null,
+            delivery_fee: deliveryFee,
+            grandTotal,
+        });
     };
 
-    const setExact = () => { setAmount(formatMoney(total)); setReceived(formatMoney(total)); };
+    const setExact = () => { setAmount(formatMoney(grandTotal)); setReceived(formatMoney(grandTotal)); };
 
     const copyToClipboard = async (text, label) => {
         try {
@@ -379,9 +409,46 @@ function PaymentModal({ total, onClose, onPay, saving }) {
                     <button onClick={onClose}><X size={20} className="text-slate-400" /></button>
                 </div>
                 <form onSubmit={submit} className="p-4 space-y-4 overflow-y-auto">
-                    <div className="text-center py-4 rounded-xl" style={{ backgroundColor: LIGHT }}>
+                    <div className="text-center py-4 rounded-xl space-y-1" style={{ backgroundColor: LIGHT }}>
                         <p className="text-sm text-slate-500 font-medium">Total a pagar</p>
-                        <p className="text-4xl font-black" style={{ color: PINK }}>${formatMoney(total)}</p>
+                        <p className="text-4xl font-black" style={{ color: PINK }}>${formatMoney(grandTotal)}</p>
+                        <div className="text-xs text-slate-500 space-y-0.5 pt-1">
+                            <div className="flex justify-between px-6"><span>Pedido</span><span>${formatMoney(total)}</span></div>
+                            {deliveryFee > 0 && (
+                                <div className="flex justify-between px-6 font-bold" style={{ color: PINK }}>
+                                    <span>Delivery · {selectedZone?.name}</span>
+                                    <span>+${formatMoney(deliveryFee)}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">¿Desea delivery?</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button type="button" onClick={() => setWantsDelivery(true)}
+                                className={`py-2 rounded-lg border text-sm font-bold ${wantsDelivery ? 'text-white border-transparent' : 'bg-white text-slate-600 border-slate-200'}`}
+                                style={wantsDelivery ? { backgroundColor: PINK } : {}}>
+                                Sí
+                            </button>
+                            <button type="button" onClick={() => { setWantsDelivery(false); setZoneId(''); }}
+                                className={`py-2 rounded-lg border text-sm font-bold ${!wantsDelivery ? 'text-white border-transparent' : 'bg-white text-slate-600 border-slate-200'}`}
+                                style={!wantsDelivery ? { backgroundColor: PINK } : {}}>
+                                No
+                            </button>
+                        </div>
+                        {wantsDelivery && (
+                            <select value={zoneId} onChange={e => setZoneId(e.target.value)}
+                                className="w-full border rounded-lg px-3 py-2 text-sm font-bold outline-none bg-white" style={{ borderColor: '#f0dde3' }}>
+                                <option value="">Selecciona la ciudad...</option>
+                                {zones.map(z => (
+                                    <option key={z.id} value={z.id}>{z.name} · +${formatMoney(z.price)}</option>
+                                ))}
+                            </select>
+                        )}
+                        {wantsDelivery && zones.length === 0 && (
+                            <p className="text-xs text-slate-400">No hay zonas de delivery disponibles.</p>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">

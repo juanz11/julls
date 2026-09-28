@@ -80,11 +80,11 @@ Route::post('/api/upload-image', function (Request $request) {
 // API genérica para datos de la tienda
 // 'products' y 'clients' se alimentan del sistema admin (julls-orden-de-pago);
 // se guarda una copia local como respaldo si el admin no está disponible.
-foreach (['products', 'clients', 'orders', 'footer', 'banner'] as $key) {
+foreach (['products', 'clients', 'categories', 'orders', 'footer', 'banner', 'delivery-zones'] as $key) {
     Route::get("/api/store/{$key}", function () use ($key) {
         $file = "{$key}.json";
 
-        if (in_array($key, ['products', 'clients'])) {
+        if (in_array($key, ['products', 'clients', 'categories', 'delivery-zones'])) {
             try {
                 $base = rtrim(env('ADMIN_API_URL', 'http://localhost:8001'), '/');
                 $res = Http::timeout(5)->get("{$base}/api/store/{$key}");
