@@ -40,21 +40,15 @@ function PosApp() {
     const [successOrder, setSuccessOrder] = useState(null);
 
     useEffect(() => {
-        fetch('/api/pos/catalog')
-            .then(r => r.json())
-            .then(data => {
-                if (data?.products?.length) {
-                    setCategories(data.categories || DEFAULT_CATEGORIES);
-                    setProducts(data.products.map(p => ({
-                        ...p,
-                        price: Number(p.price),
-                        stock: Number(p.stock ?? 0),
-                        flavors: p.flavors || [],
-                    })));
-                }
-            })
-            .catch(() => {})
-            .finally(() => setLoading(false));
+        // Frontend demo: usar datos por defecto sin fetch al backend
+        setCategories(DEFAULT_CATEGORIES);
+        setProducts(DEFAULT_PRODUCTS.map(p => ({
+            ...p,
+            price: Number(p.price),
+            stock: Number(p.stock ?? 0),
+            flavors: p.flavors || [],
+        })));
+        setLoading(false);
     }, []);
 
     const filteredProducts = useMemo(() => {
@@ -110,35 +104,14 @@ function PosApp() {
         if (cart.length === 0) return;
         setSaving(true);
         try {
-            const payload = {
-                customer_name: 'Cliente general',
-                table: null,
-                account: null,
-                notes: null,
-                delivery_city: delivery_city || null,
-                delivery_fee: delivery_fee || 0,
-                subtotal: totals.subtotal,
-                tax: totals.tax,
-                discount: 0,
+            // Frontend demo: simular guardado sin backend
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const order = {
+                id: Math.floor(Math.random() * 10000) + 1000,
                 total: grandTotal ?? totals.total,
-                items: cart.map(i => ({
-                    product_id: i.product_id,
-                    name: i.name,
-                    flavor: null,
-                    qty: i.qty,
-                    price: i.price,
-                })),
-                payments: [
-                    { method, amount, received, reference },
-                ],
+                delivery_city,
+                delivery_fee,
             };
-            const res = await fetch('/api/pos/orders', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf() },
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) throw new Error('Error al guardar');
-            const order = await res.json();
             setCart([]);
             setSelectedLine(null);
             setPayOpen(false);
@@ -351,10 +324,20 @@ function PaymentModal({ total, onClose, onPay, saving }) {
     const [zoneId, setZoneId] = useState('');
 
     useEffect(() => {
-        fetch('/api/store/delivery-zones')
-            .then(r => r.json())
-            .then(data => { if (Array.isArray(data)) setZones(data); })
-            .catch(() => {});
+        // Frontend demo: usar zonas de ejemplo sin fetch al backend
+        const demoZones = [
+            { id: 1, name: 'Valencia', price: 2.50 },
+            { id: 2, name: 'Naguanagua', price: 3.00 },
+            { id: 3, name: 'San Diego', price: 3.50 },
+            { id: 4, name: 'Los Guayos', price: 3.00 },
+            { id: 5, name: 'Guacara', price: 4.00 },
+            { id: 6, name: 'San Joaquín', price: 4.50 },
+            { id: 7, name: 'Mariara', price: 5.00 },
+            { id: 8, name: 'Guigüe', price: 5.50 },
+            { id: 9, name: 'Tocuyito', price: 4.00 },
+            { id: 10, name: 'Puerto Cabello', price: 6.00 },
+        ];
+        setZones(demoZones);
     }, []);
 
     const selectedZone = zones.find(z => String(z.id) === String(zoneId));
