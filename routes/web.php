@@ -77,6 +77,30 @@ Route::post('/api/upload-image', function (Request $request) {
     return response()->json(['url' => '/' . $name]);
 });
 
+// Venta del POS: se reenvía al sistema admin (julls-orden-de-pago),
+// que es quien guarda la orden y descuenta el inventario.
+Route::post('/api/store/order', function (Request $request) {
+    try {
+        $base = rtrim(env('ADMIN_API_URL', 'http://localhost:8001'), '/');
+        $res = Http::timeout(10)->post("{$base}/api/store/orders", $request->all());
+
+        if ($res->successful()) {
+            return response()->json($res->json(), $res->status());
+        }
+
+        return response()->json([
+            'ok' => false,
+            'error' => 'El sistema admin rechazó la venta.',
+            'detail' => $res->json(),
+        ], $res->status() ?: 502);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'ok' => false,
+            'error' => 'No se pudo conectar con el sistema admin. Verifica que esté corriendo en ' . env('ADMIN_API_URL', 'http://localhost:8001'),
+        ], 502);
+    }
+});
+
 // API genérica para datos de la tienda
 // 'products' y 'clients' se alimentan del sistema admin (julls-orden-de-pago);
 // se guarda una copia local como respaldo si el admin no está disponible.

@@ -40,15 +40,52 @@ function PosApp() {
     const [successOrder, setSuccessOrder] = useState(null);
 
     useEffect(() => {
-        // Frontend demo: usar datos por defecto sin fetch al backend
-        setCategories(DEFAULT_CATEGORIES);
-        setProducts(DEFAULT_PRODUCTS.map(p => ({
-            ...p,
-            price: Number(p.price),
-            stock: Number(p.stock ?? 0),
-            flavors: p.flavors || [],
-        })));
-        setLoading(false);
+        // Los productos y categorías vienen del sistema admin (julls-orden-de-pago)
+        // a través de las rutas proxy /api/store/* de esta app.
+        const load = (key) => fetch(`/api/store/${key}`).then(r => r.json()).catch(() => null);
+        const fallback = () => {
+            setCategories(DEFAULT_CATEGORIES);
+            setProducts(DEFAULT_PRODUCTS.map(p => ({
+                ...p,
+                price: Number(p.price),
+                stock: Number(p.stock ?? 0),
+                flavors: p.flavors || [],
+            })));
+            setLoading(false);
+        };
+
+        Promise.all([load('products'), load('categories')]).then(([prods, cats]) => {
+            if (!Array.isArray(prods) || prods.length === 0) {
+                fallback();
+                return;
+            }
+
+            let catList = (Array.isArray(cats) ? cats : []).map(c => ({
+                id: c.id,
+                name: c.label || c.name,
+                icon: c.icon,
+            }));
+            // Si el admin no devuelve categorías, se generan desde el campo 'category' de cada producto
+            if (catList.length === 0) {
+                catList = [...new Set(prods.map(p => p.category).filter(Boolean))]
+                    .map(name => ({ id: name, name }));
+            }
+            setCategories(catList);
+
+            setProducts(prods.map(p => {
+                const cat = catList.find(c => String(c.name || '').toLowerCase() === String(p.category || '').toLowerCase());
+                return {
+                    id: p.id,
+                    category_id: cat ? cat.id : null,
+                    name: p.name,
+                    price: Number(p.price),
+                    image: p.image || '',
+                    stock: Number(p.stock ?? 0),
+                    flavors: p.flavors || [],
+                };
+            }));
+            setLoading(false);
+        }).catch(fallback);
     }, []);
 
     const filteredProducts = useMemo(() => {
@@ -104,18 +141,41 @@ function PosApp() {
         if (cart.length === 0) return;
         setSaving(true);
         try {
-            // Frontend demo: simular guardado sin backend
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const order = {
-                id: Math.floor(Math.random() * 10000) + 1000,
-                total: grandTotal ?? totals.total,
-                delivery_city,
-                delivery_fee,
-            };
+            // La venta se registra en el sistema admin (julls-orden-de-pago)
+            // a través del proxy /api/store/order de esta app.
+            const res = await fetch('/api/store/order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf(),
+                },
+                body: JSON.stringify({
+                    items: cart.map(i => ({ product_id: i.product_id, name: i.name, qty: i.qty, price: i.price })),
+                    payment_method: method,
+                    payment_reference: reference || null,
+                    delivery_city: delivery_city || null,
+                    delivery_fee: delivery_fee || 0,
+                }),
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.ok) throw new Error(data?.error || 'No se pudo registrar la venta');
+
+            // Reflejar la venta en el stock visible
+            setProducts(prev => prev.map(p => {
+                const item = cart.find(i => i.product_id === p.id);
+                return item ? { ...p, stock: Math.max(0, p.stock - item.qty) } : p;
+            }));
+
             setCart([]);
             setSelectedLine(null);
             setPayOpen(false);
-            setSuccessOrder(order);
+            setSuccessOrder({
+                id: data.order?.id,
+                total: grandTotal ?? totals.total,
+                delivery_city,
+                delivery_fee,
+            });
         } catch (e) {
             alert(e.message);
         } finally {
@@ -324,7 +384,7 @@ function PaymentModal({ total, onClose, onPay, saving }) {
     const [zoneId, setZoneId] = useState('');
 
     useEffect(() => {
-        // Frontend demo: usar zonas de ejemplo sin fetch al backend
+        // Zonas de delivery desde el sistema admin; si no responde, se usan zonas de ejemplo
         const demoZones = [
             { id: 1, name: 'Valencia', price: 2.50 },
             { id: 2, name: 'Naguanagua', price: 3.00 },
@@ -337,7 +397,10 @@ function PaymentModal({ total, onClose, onPay, saving }) {
             { id: 9, name: 'Tocuyito', price: 4.00 },
             { id: 10, name: 'Puerto Cabello', price: 6.00 },
         ];
-        setZones(demoZones);
+        fetch('/api/store/delivery-zones')
+            .then(r => r.json())
+            .then(d => setZones(Array.isArray(d) && d.length ? d : demoZones))
+            .catch(() => setZones(demoZones));
     }, []);
 
     const selectedZone = zones.find(z => String(z.id) === String(zoneId));
