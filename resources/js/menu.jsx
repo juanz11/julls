@@ -242,6 +242,9 @@ function MenuApp() {
                                                     <img src={p.image} alt={p.name} className="w-12 h-12 rounded-xl object-cover bg-slate-100" onError={e => e.target.style.display='none'} />
                                                     <div>
                                                         <p className="font-black text-slate-800">{p.name}</p>
+                                                        {p.tag && (
+                                                            <span className="inline-block text-[10px] font-bold text-white px-2 py-0.5 rounded-md my-0.5 tracking-wide" style={{ backgroundColor: PINK }}>{p.tag}</span>
+                                                        )}
                                                         <p className="text-xs text-slate-400">{p.weight} · {p.shelf}</p>
                                                     </div>
                                                 </div>

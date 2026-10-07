@@ -9,3 +9,23 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Al imprimir solo sale el ticket de la factura del POS */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #factura-print,
+    #factura-print * {
+        visibility: visible;
+    }
+    #factura-print {
+        position: fixed;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80mm;
+        padding: 4mm;
+        overflow: visible;
+    }
+}

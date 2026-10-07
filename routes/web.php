@@ -14,7 +14,7 @@ Route::get('/cupon', function () {
 });
 
 Route::get('/admin', function () {
-    return view('admin');
+    return redirect(rtrim(env('ADMIN_API_URL', 'https://administrativo.julls.net'), '/'));
 });
 
 Route::get('/presupuesto', function () {
@@ -55,8 +55,20 @@ Route::prefix('api/products')->group(function () {
     Route::delete('/{product}', [\App\Http\Controllers\ProductController::class, 'destroy']);
 });
 
-// API para el presupuesto
+// API para el presupuesto: se gestiona en el admin (julls-orden-de-pago);
+// se guarda una copia local como respaldo si el admin no está disponible.
 Route::get('/api/presupuesto', function () {
+    try {
+        $base = rtrim(env('ADMIN_API_URL', 'http://localhost:8001'), '/');
+        $res = Http::timeout(5)->get("{$base}/api/store/presupuesto");
+        if ($res->successful() && $res->json() !== null) {
+            Storage::disk('local')->put('presupuesto.json', json_encode($res->json()));
+            return response()->json($res->json());
+        }
+    } catch (\Throwable $e) {
+        // Admin no disponible: se usa la copia local
+    }
+
     if (Storage::disk('local')->exists('presupuesto.json')) {
         return response()->json(json_decode(Storage::disk('local')->get('presupuesto.json'), true));
     }
@@ -101,14 +113,34 @@ Route::post('/api/store/order', function (Request $request) {
     }
 });
 
+// Registro/login de clientes de la tienda: se reenvían al sistema admin.
+foreach (['clients/register', 'clients/login', 'coupons'] as $adminPath) {
+    Route::post("/api/store/{$adminPath}", function (Request $request) use ($adminPath) {
+        try {
+            $base = rtrim(env('ADMIN_API_URL', 'http://localhost:8001'), '/');
+            $res = Http::timeout(10)->post("{$base}/api/store/{$adminPath}", $request->all());
+
+            return response()->json(
+                $res->json() ?? ['ok' => false, 'error' => 'Respuesta inválida del sistema admin.'],
+                $res->status() ?: 502
+            );
+        } catch (\Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'No se pudo conectar con el sistema admin. Verifica que esté corriendo en ' . env('ADMIN_API_URL', 'http://localhost:8001'),
+            ], 502);
+        }
+    });
+}
+
 // API genérica para datos de la tienda
 // 'products' y 'clients' se alimentan del sistema admin (julls-orden-de-pago);
 // se guarda una copia local como respaldo si el admin no está disponible.
-foreach (['products', 'clients', 'categories', 'orders', 'footer', 'banner', 'delivery-zones'] as $key) {
+foreach (['products', 'clients', 'categories', 'orders', 'footer', 'banner', 'delivery-zones', 'factura-config'] as $key) {
     Route::get("/api/store/{$key}", function () use ($key) {
         $file = "{$key}.json";
 
-        if (in_array($key, ['products', 'clients', 'categories', 'delivery-zones'])) {
+        if (in_array($key, ['products', 'clients', 'categories', 'delivery-zones', 'factura-config'])) {
             try {
                 $base = rtrim(env('ADMIN_API_URL', 'http://localhost:8001'), '/');
                 $res = Http::timeout(5)->get("{$base}/api/store/{$key}");

@@ -3,7 +3,7 @@ import '../css/app.css';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Search, X, CreditCard, Banknote, Smartphone, ArrowRightLeft, Trash2, Plus, Minus, ShoppingBag, CheckCircle2, Receipt } from 'lucide-react';
+import { Search, X, CreditCard, Banknote, Smartphone, ArrowRightLeft, Trash2, Plus, Minus, ShoppingBag, CheckCircle2, Receipt, User, LogOut } from 'lucide-react';
 
 const PINK = '#bf7691';
 const LIGHT = '#fdf5f7';
@@ -25,6 +25,7 @@ const DEFAULT_PRODUCTS = [
 
 const formatMoney = (n) => Number(n || 0).toFixed(2);
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
+const CUSTOMER_KEY = 'julls_customer';
 
 function PosApp() {
     const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
@@ -38,6 +39,17 @@ function PosApp() {
     const [payOpen, setPayOpen] = useState(false);
     const [saving, setSaving] = useState(false);
     const [successOrder, setSuccessOrder] = useState(null);
+    const [authOpen, setAuthOpen] = useState(false);
+    const [customer, setCustomer] = useState(() => {
+        try { return JSON.parse(localStorage.getItem(CUSTOMER_KEY)); } catch { return null; }
+    });
+    // Comprador cargado manualmente por un admin "en caja" (no pisa la sesión del admin)
+    const [manualCustomer, setManualCustomer] = useState(null);
+    const effectiveCustomer = manualCustomer || customer;
+    const [invoiceCfg, setInvoiceCfg] = useState({
+        company_name: 'JULLS Repostería, C.A.', rif: '', address: '', phone: '',
+        footer: '¡Gracias por su compra!', iva: 16,
+    });
 
     useEffect(() => {
         // Los productos y categorías vienen del sistema admin (julls-orden-de-pago)
@@ -53,6 +65,12 @@ function PosApp() {
             })));
             setLoading(false);
         };
+
+        load('factura-config').then(cfg => {
+            if (cfg && typeof cfg === 'object' && !Array.isArray(cfg)) {
+                setInvoiceCfg(prev => ({ ...prev, ...cfg }));
+            }
+        });
 
         Promise.all([load('products'), load('categories')]).then(([prods, cats]) => {
             if (!Array.isArray(prods) || prods.length === 0) {
@@ -78,6 +96,7 @@ function PosApp() {
                     id: p.id,
                     category_id: cat ? cat.id : null,
                     name: p.name,
+                    tag: p.tag || '',
                     price: Number(p.price),
                     image: p.image || '',
                     stock: Number(p.stock ?? 0),
@@ -100,10 +119,10 @@ function PosApp() {
 
     const totals = useMemo(() => {
         const subtotal = cart.reduce((s, i) => s + i.qty * i.price, 0);
-        const tax = subtotal * 0.16;
+        const tax = subtotal * (Number(invoiceCfg.iva) / 100);
         const total = subtotal + tax;
         return { subtotal, tax, total };
-    }, [cart]);
+    }, [cart, invoiceCfg]);
 
     const addProduct = (product, qty = 1) => {
         if (product.stock <= 0) return;
@@ -137,6 +156,26 @@ function PosApp() {
         if (selectedLine === key) setSelectedLine(null);
     };
 
+    const loginCustomer = (client) => {
+        setCustomer(client);
+        setManualCustomer(null);
+        localStorage.setItem(CUSTOMER_KEY, JSON.stringify(client));
+        setAuthOpen(false);
+        setPayOpen(true);
+    };
+
+    const cajaCustomer = (buyer) => {
+        setManualCustomer(buyer);
+        setAuthOpen(false);
+        setPayOpen(true);
+    };
+
+    const logoutCustomer = () => {
+        setCustomer(null);
+        setManualCustomer(null);
+        localStorage.removeItem(CUSTOMER_KEY);
+    };
+
     const pay = async ({ method, amount, received, reference, delivery_city, delivery_fee, grandTotal }) => {
         if (cart.length === 0) return;
         setSaving(true);
@@ -151,6 +190,11 @@ function PosApp() {
                     'X-CSRF-TOKEN': csrf(),
                 },
                 body: JSON.stringify({
+                    client_id: effectiveCustomer?.id || null,
+                    customer_name: effectiveCustomer?.name || null,
+                    customer_phone: effectiveCustomer?.phone || null,
+                    customer_email: effectiveCustomer?.email || null,
+                    customer_cedula: effectiveCustomer?.cedula || null,
                     items: cart.map(i => ({ product_id: i.product_id, name: i.name, qty: i.qty, price: i.price })),
                     payment_method: method,
                     payment_reference: reference || null,
@@ -170,11 +214,24 @@ function PosApp() {
             setCart([]);
             setSelectedLine(null);
             setPayOpen(false);
+            setManualCustomer(null);
+            const productItems = (data.order?.items || [])
+                .filter(i => !String(i.description || '').startsWith('Delivery'));
+
             setSuccessOrder({
                 id: data.order?.id,
-                total: grandTotal ?? totals.total,
+                date: data.order?.created_at,
+                items: productItems.length
+                    ? productItems
+                    : cart.map(i => ({ description: i.name, quantity: i.qty, unit_price: i.price })),
+                customer: effectiveCustomer,
+                payment_method: method,
+                subtotal: totals.subtotal,
+                tax: totals.tax,
+                iva: invoiceCfg.iva,
                 delivery_city,
                 delivery_fee,
+                total: grandTotal ?? totals.total,
             });
         } catch (e) {
             alert(e.message);
@@ -207,6 +264,17 @@ function PosApp() {
                         />
                         {search && <button onClick={() => setSearch('')}><X size={14} className="text-slate-400" /></button>}
                     </div>
+                    {customer ? (
+                        <div className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold" style={{ backgroundColor: LIGHT, color: PINK }}>
+                            <User size={14} />
+                            <span className="max-w-[110px] truncate">{customer.name}</span>
+                            <button onClick={logoutCustomer} title="Cerrar sesión" className="text-slate-400 hover:text-red-500"><LogOut size={14} /></button>
+                        </div>
+                    ) : (
+                        <button onClick={() => setAuthOpen(true)} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200">
+                            <User size={14} /> Ingresar
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -251,7 +319,7 @@ function PosApp() {
                     {/* Summary */}
                     <div className="border-t p-3 space-y-1 text-sm" style={{ borderColor: '#f0dde3' }}>
                         <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>${formatMoney(totals.subtotal)}</span></div>
-                        <div className="flex justify-between text-slate-500"><span>Impuestos (16%)</span><span>${formatMoney(totals.tax)}</span></div>
+                        <div className="flex justify-between text-slate-500"><span>Impuestos ({invoiceCfg.iva}%)</span><span>${formatMoney(totals.tax)}</span></div>
                         <div className="flex justify-between text-xl font-black pt-1" style={{ color: PINK }}><span>Total</span><span>${formatMoney(totals.total)}</span></div>
                     </div>
 
@@ -261,7 +329,7 @@ function PosApp() {
                             <button onClick={() => selectedLine && removeLine(selectedLine)} className="flex-1 py-3 rounded-lg border text-sm font-bold text-red-500 hover:bg-red-50" style={{ borderColor: '#fecaca' }}>
                                 <Trash2 size={16} className="inline mr-1" /> Quitar
                             </button>
-                            <button onClick={() => setPayOpen(true)} disabled={cart.length === 0} className="flex-[2] py-3 rounded-lg text-white text-sm font-bold disabled:bg-slate-300" style={{ backgroundColor: PINK }}>
+                            <button onClick={() => customer?.is_admin ? setAuthOpen(true) : customer ? setPayOpen(true) : setAuthOpen(true)} disabled={cart.length === 0} className="flex-[2] py-3 rounded-lg text-white text-sm font-bold disabled:bg-slate-300" style={{ backgroundColor: PINK }}>
                                 Pago ${formatMoney(totals.total)}
                             </button>
                         </div>
@@ -319,6 +387,9 @@ function PosApp() {
                                             )}
                                             <div className="flex-1 flex flex-col justify-center">
                                                 <p className="text-xs font-bold text-slate-800 leading-tight">{product.name}</p>
+                                                {product.tag && (
+                                                    <span className="inline-block text-[9px] font-bold text-white px-1.5 py-0.5 rounded mt-0.5 tracking-wide" style={{ backgroundColor: PINK }}>{product.tag}</span>
+                                                )}
                                                 <p className="text-xs font-black mt-1" style={{ color: PINK }}>${formatMoney(product.price)}</p>
                                             </div>
                                             <div className="flex items-center gap-1 mt-1">
@@ -353,6 +424,15 @@ function PosApp() {
             </div>
 
             {/* Payment modal */}
+            {authOpen && (
+                <CustomerModal
+                    onClose={() => setAuthOpen(false)}
+                    onAuth={loginCustomer}
+                    onCaja={cajaCustomer}
+                    adminOnly={!!customer?.is_admin}
+                />
+            )}
+
             {payOpen && (
                 <PaymentModal
                     total={totals.total}
@@ -362,10 +442,11 @@ function PosApp() {
                 />
             )}
 
-            {/* Success modal */}
+            {/* Factura post-pago */}
             {successOrder && (
-                <SuccessModal
+                <InvoiceModal
                     order={successOrder}
+                    cfg={invoiceCfg}
                     onClose={() => setSuccessOrder(null)}
                 />
             )}
@@ -569,28 +650,202 @@ function PaymentModal({ total, onClose, onPay, saving }) {
     );
 }
 
-function SuccessModal({ order, onClose }) {
+function CustomerModal({ onClose, onAuth, onCaja, adminOnly }) {
+    const [mode, setMode] = useState(adminOnly ? 'caja' : 'login'); // 'login' | 'register' | 'caja'
+    const [form, setForm] = useState({ name: '', cedula: '', email: '', phone: '', password: '', password_confirmation: '' });
+    const [error, setError] = useState('');
+    const [busy, setBusy] = useState(false);
+
+    const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+    const submit = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (mode === 'register' && form.password !== form.password_confirmation) {
+            setError('Las claves no coinciden.');
+            return;
+        }
+        if (mode === 'caja') {
+            onCaja({ id: null, name: form.name, cedula: form.cedula, phone: form.phone, email: '' });
+            return;
+        }
+        setBusy(true);
+        try {
+            const res = await fetch(`/api/store/clients/${mode === 'login' ? 'login' : 'register'}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf(),
+                },
+                body: JSON.stringify(form),
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.ok) {
+                const firstError = data?.errors ? Object.values(data.errors).flat()[0] : null;
+                throw new Error(data?.error || firstError || 'No se pudo completar la operación');
+            }
+            onAuth(data.client);
+        } catch (e) {
+            setError(e.message);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const inputCls = 'w-full border rounded-lg px-3 py-2 text-sm outline-none';
+    const inputStyle = { borderColor: '#f0dde3' };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
-                <div className="p-6 text-center space-y-4">
-                    <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-                        <CheckCircle2 size={40} className="text-green-600" />
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
+                <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#f0dde3' }}>
+                    <h3 className="font-black text-lg">{adminOnly ? 'Datos del comprador' : 'Identifícate para pagar'}</h3>
+                    <button onClick={onClose}><X size={20} className="text-slate-400" /></button>
+                </div>
+
+                {adminOnly ? null : (
+                <div className="grid grid-cols-2 border-b" style={{ borderColor: '#f0dde3' }}>
+                    {[['login', 'Ingresar'], ['register', 'Registrarse']].map(([id, label]) => (
+                        <button key={id} type="button" onClick={() => { setMode(id); setError(''); }}
+                            className={`py-2.5 text-sm font-bold border-b-2 ${mode === id ? 'border-transparent text-white' : 'border-transparent text-slate-400'}`}
+                            style={mode === id ? { backgroundColor: PINK } : {}}>
+                            {label}
+                        </button>
+                    ))}
+                </div>
+                )}
+
+                <form onSubmit={submit} className="p-4 space-y-3">
+                    {mode === 'caja' ? (
+                        <>
+                            <input required type="text" value={form.name} onChange={set('name')} placeholder="Nombre del cliente" className={inputCls} style={inputStyle} />
+                            <input required type="text" value={form.cedula} onChange={set('cedula')} placeholder="Cédula (ej: V-12.345.678)" className={inputCls} style={inputStyle} />
+                            <input required type="tel" value={form.phone} onChange={set('phone')} placeholder="Teléfono" className={inputCls} style={inputStyle} />
+                            <p className="text-[11px] text-slate-400">Registro manual en caja — solo disponible para el admin; el comprador no queda con cuenta, solo se asocia a la venta.</p>
+                        </>
+                    ) : (
+                        <>
+                            {mode === 'register' && (
+                                <>
+                                    <input required type="text" value={form.name} onChange={set('name')} placeholder="Nombre completo" className={inputCls} style={inputStyle} />
+                                    <input required type="text" value={form.cedula} onChange={set('cedula')} placeholder="Cédula (ej: V-12.345.678)" className={inputCls} style={inputStyle} />
+                                    <input required type="tel" value={form.phone} onChange={set('phone')} placeholder="Número de celular" className={inputCls} style={inputStyle} />
+                                </>
+                            )}
+                            <input required type="email" value={form.email} onChange={set('email')} placeholder="Correo electrónico" className={inputCls} style={inputStyle} />
+                            <input required type="password" minLength="6" value={form.password} onChange={set('password')} placeholder="Clave (mín. 6 caracteres)" className={inputCls} style={inputStyle} />
+                            {mode === 'register' && (
+                                <input required type="password" minLength="6" value={form.password_confirmation} onChange={set('password_confirmation')} placeholder="Confirmar clave" className={inputCls} style={inputStyle} />
+                            )}
+                        </>
+                    )}
+
+                    {error && <p className="text-xs font-bold text-red-500">{error}</p>}
+
+                    <button type="submit" disabled={busy} className="w-full py-3 rounded-lg text-white font-bold disabled:bg-slate-300" style={{ backgroundColor: PINK }}>
+                        {busy ? 'Verificando...' : mode === 'login' ? 'Ingresar y pagar' : mode === 'register' ? 'Registrarme y pagar' : 'Continuar al pago'}
+                    </button>
+                    {mode !== 'caja' && (
+                        <p className="text-[11px] text-slate-400 text-center">
+                            Tus datos se guardan en el sistema administrativo de JULLS.
+                        </p>
+                    )}
+                </form>
+            </div>
+        </div>
+    );
+}
+
+function InvoiceModal({ order, cfg, onClose }) {
+    const now = order.date ? new Date(order.date) : new Date();
+    const fecha = now.toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const hora = now.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+    const items = order.items || [];
+    const subtotal = order.subtotal ?? items.reduce((s, i) => s + (i.quantity ?? i.qty) * (i.unit_price ?? i.price), 0);
+    const tax = order.tax ?? 0;
+    const deliveryFee = Number(order.delivery_fee || 0);
+    const total = order.total ?? subtotal + tax + deliveryFee;
+    const iva = Number(order.iva ?? cfg.iva);
+
+    const methodLabel = { cash: 'Efectivo', card: 'Tarj. Debito', mobile: 'Pago Móvil', transfer: 'Transferencia' }[order.payment_method] || order.payment_method || 'Efectivo';
+    const ivaLabel = `(${iva.toFixed(2).replace('.', ',')}%)`;
+
+    const D = () => <div className="border-t border-dashed border-slate-400 my-2" />;
+    const Row = ({ l, r, bold }) => (
+        <div className={`flex justify-between ${bold ? 'font-black' : ''}`}><span>{l}</span><span>{r}</span></div>
+    );
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 print:bg-white print:p-0 print:static">
+            <div className="bg-white w-full max-w-xs max-h-[92vh] overflow-y-auto shadow-xl print:shadow-none print:max-h-none">
+                {/* Ticket fiscal */}
+                <div className="p-4 text-black font-mono text-[11px] leading-relaxed" id="factura-print">
+                    {/* Encabezado empresa */}
+                    <div className="text-center">
+                        <p className="font-black text-sm">SENIAT</p>
+                        {cfg.rif && <p className="font-bold">{cfg.rif}</p>}
+                        <p className="font-black uppercase">{cfg.company_name}</p>
+                        {cfg.address && <p>{cfg.address}</p>}
+                        {cfg.phone && <p>TLF: {cfg.phone}</p>}
+                        <p>Caja 01</p>
                     </div>
+                    <D />
+
+                    {/* Cliente */}
                     <div>
-                        <h3 className="text-2xl font-black text-slate-800">¡Compra exitosa!</h3>
-                        <p className="text-slate-500 mt-1">Factura #{order.id}</p>
+                        <p className="font-bold">Información del Cliente</p>
+                        <p>Cliente: {order.customer?.name || 'Cliente general'}</p>
+                        <p>RIF/C.I.: {order.customer?.cedula || '—'}</p>
+                        {order.customer?.phone && <p>Telf: {order.customer.phone}</p>}
                     </div>
-                    <div className="rounded-xl border p-4 space-y-2 text-left" style={{ borderColor: '#f0dde3', backgroundColor: LIGHT }}>
-                        <div className="flex justify-between text-sm"><span>Total</span><span className="font-black">${formatMoney(order.total)}</span></div>
-                        {order.delivery_city && (
-                            <div className="flex justify-between text-sm">
-                                <span>Delivery · {order.delivery_city}</span>
-                                <span className="font-bold" style={{ color: PINK }}>+${formatMoney(order.delivery_fee)}</span>
-                            </div>
-                        )}
+                    <D />
+
+                    {/* Datos factura */}
+                    <p className="text-center font-black">FACTURA</p>
+                    <div className="flex justify-between">
+                        <span>FACTURA:</span><span>{String(order.id || 0).padStart(8, '0')}</span>
                     </div>
-                    <button onClick={onClose} className="w-full py-3 rounded-lg text-white font-bold" style={{ backgroundColor: PINK }}>
+                    <div className="flex justify-between">
+                        <span>FECHA: {fecha}</span><span>HORA: {hora}</span>
+                    </div>
+                    <D />
+
+                    {/* Items */}
+                    {items.map((it, i) => (
+                        <div key={i} className="flex justify-between gap-2">
+                            <span className="truncate">{it.quantity ?? it.qty}x {(it.description || it.name || '').toUpperCase()}</span>
+                            <span className="whitespace-nowrap">$ {formatMoney((it.quantity ?? it.qty) * (it.unit_price ?? it.price))}</span>
+                        </div>
+                    ))}
+                    <D />
+
+                    {/* Base imponible e IVA */}
+                    <Row l={`BI G ${ivaLabel}`} r={`$ ${formatMoney(subtotal)}`} />
+                    <Row l={`IVA G ${ivaLabel}`} r={`$ ${formatMoney(tax)}`} />
+                    {deliveryFee > 0 && (
+                        <Row l={`Delivery${order.delivery_city ? ` · ${order.delivery_city}` : ''}`} r={`$ ${formatMoney(deliveryFee)}`} />
+                    )}
+                    <D />
+                    <div className="flex justify-between text-sm font-black">
+                        <span>TOTAL</span><span>$ {formatMoney(total)}</span>
+                    </div>
+                    <D />
+
+                    {/* Métodos de pago */}
+                    <Row l={methodLabel} r={`$ ${formatMoney(total)}`} />
+                    <D />
+
+                    {/* Pie */}
+                    <p className="text-center">{cfg.footer}</p>
+                </div>
+
+                {/* Acciones (no se imprimen) */}
+                <div className="p-3 border-t flex gap-2 print:hidden" style={{ borderColor: '#f0dde3' }}>
+                    <button onClick={() => window.print()} className="flex-1 py-2.5 rounded-lg border text-sm font-bold text-slate-600 hover:bg-slate-50" style={{ borderColor: '#e2e8f0' }}>
+                        <Receipt size={15} className="inline mr-1" /> Imprimir
+                    </button>
+                    <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-white text-sm font-bold" style={{ backgroundColor: PINK }}>
                         Volver a la caja
                     </button>
                 </div>

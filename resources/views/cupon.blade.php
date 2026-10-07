@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Cupón gratis - JULLS</title>
     <style>
         * { box-sizing: border-box; }
@@ -153,9 +154,10 @@
             return 'JULLS-' + code;
         }
 
-        document.getElementById('cuponForm').addEventListener('submit', function (e) {
+        document.getElementById('cuponForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             const errorEl = document.getElementById('error');
+            const btn = this.querySelector('button[type="submit"]');
             errorEl.textContent = '';
 
             const nombre = document.getElementById('nombre').value.trim();
@@ -175,18 +177,50 @@
                 return;
             }
 
-            const codigo = 'JULLS-CONEXION';
-            const mensaje = `¡Hola, ${nombreDestino}! 🎉\n\n` +
-                            `Adivina qué... ${nombre} cree que te mereces una pausa dulce y te acaba de regalar un café en Julls ☕💖.\n\n` +
-                            `Tu ticket de cortesía:\n` +
-                            `☕ Válido por 1 café (Americano, Expresso, Latte o Cappuccino).\n` +
-                            `🎟️ Código de canje: ${codigo}\n\n` +
-                            `💡 Tip Julls: ¡Dile a ${nombre} que vengan juntos y acompañenlo con nuestras ricas galletas! 🍪\n\n` +
-                            `Muestra este chat en caja para activar tu regalo. ¡Nos vemos en el local!\n\n` +
-                            `@jullsreposteria`;
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
 
-            const url = `https://wa.me/${to}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, '_blank');
+            try {
+                // Registra el cupón en el sistema admin (1 por cédula, queda pendiente de verificación)
+                const res = await fetch('/api/store/coupons', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                    body: JSON.stringify({
+                        sender_name: nombre,
+                        sender_cedula: cedula,
+                        sender_phone: numero,
+                        recipient_name: nombreDestino,
+                        recipient_phone: destino,
+                    }),
+                });
+                const data = await res.json().catch(() => null);
+
+                if (!res.ok || !data?.ok) {
+                    throw new Error(data?.error || 'No se pudo registrar el cupón. Intenta de nuevo.');
+                }
+
+                const codigo = data.coupon.code;
+                const mensaje = `¡Hola, ${nombreDestino}! 🎉\n\n` +
+                                `Adivina qué... ${nombre} cree que te mereces una pausa dulce y te acaba de regalar un café en Julls ☕💖.\n\n` +
+                                `Tu ticket de cortesía:\n` +
+                                `☕ Válido por 1 café (Americano, Expresso, Latte o Cappuccino).\n` +
+                                `🎟️ Código de canje: ${codigo}\n\n` +
+                                `💡 Tip Julls: ¡Dile a ${nombre} que vengan juntos y acompañenlo con nuestras ricas galletas! 🍪\n\n` +
+                                `Muestra este chat en caja para activar tu regalo. ¡Nos vemos en el local!\n\n` +
+                                `@jullsreposteria`;
+
+                const url = `https://wa.me/${to}?text=${encodeURIComponent(mensaje)}`;
+                window.open(url, '_blank');
+            } catch (err) {
+                errorEl.textContent = err.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Enviar cupón por WhatsApp';
+            }
         });
     </script>
 </body>
