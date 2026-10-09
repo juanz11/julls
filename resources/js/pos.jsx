@@ -1,7 +1,7 @@
 import './bootstrap';
 import '../css/app.css';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Search, X, CreditCard, Banknote, Smartphone, ArrowRightLeft, Trash2, Plus, Minus, ShoppingBag, CheckCircle2, Receipt, User, LogOut } from 'lucide-react';
 
@@ -658,6 +658,29 @@ function CustomerModal({ onClose, onAuth, onCaja, adminOnly }) {
 
     const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
+    const [lookingUp, setLookingUp] = useState(false);
+    const lookupTimer = useRef(null);
+    // Al escribir la cédula en "En caja", busca si ya compró antes y autocompleta
+    const onCedulaChange = (e) => {
+        const value = e.target.value;
+        setForm(f => ({ ...f, cedula: value }));
+        if (mode !== 'caja') return;
+        clearTimeout(lookupTimer.current);
+        const ced = value.trim();
+        if (ced.length < 6) return;
+        lookupTimer.current = setTimeout(async () => {
+            setLookingUp(true);
+            try {
+                const res = await fetch(`/api/store/clients/lookup?cedula=${encodeURIComponent(ced)}`, { headers: { 'Accept': 'application/json' } });
+                const data = await res.json().catch(() => null);
+                if (data?.ok && data.client) {
+                    setForm(f => ({ ...f, name: f.name || data.client.name || '', phone: f.phone || data.client.phone || '' }));
+                }
+            } catch { /* sin conexión: se llena manual */ }
+            setLookingUp(false);
+        }, 400);
+    };
+
     const submit = async (e) => {
         e.preventDefault();
         setError('');
@@ -719,8 +742,11 @@ function CustomerModal({ onClose, onAuth, onCaja, adminOnly }) {
                 <form onSubmit={submit} className="p-4 space-y-3">
                     {mode === 'caja' ? (
                         <>
+                            <div className="relative">
+                                <input required type="text" value={form.cedula} onChange={onCedulaChange} placeholder="Cédula (ej: V-12.345.678)" className={inputCls} style={inputStyle} />
+                                {lookingUp && <span className="absolute right-3 top-2.5 text-[10px] text-slate-400">buscando...</span>}
+                            </div>
                             <input required type="text" value={form.name} onChange={set('name')} placeholder="Nombre del cliente" className={inputCls} style={inputStyle} />
-                            <input required type="text" value={form.cedula} onChange={set('cedula')} placeholder="Cédula (ej: V-12.345.678)" className={inputCls} style={inputStyle} />
                             <input required type="tel" value={form.phone} onChange={set('phone')} placeholder="Teléfono" className={inputCls} style={inputStyle} />
                             <p className="text-[11px] text-slate-400">Registro manual en caja — solo disponible para el admin; el comprador no queda con cuenta, solo se asocia a la venta.</p>
                         </>

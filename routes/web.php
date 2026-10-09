@@ -133,6 +133,19 @@ foreach (['clients/register', 'clients/login', 'coupons'] as $adminPath) {
     });
 }
 
+// Buscar cliente por cédula (autocompletar en caja): proxy al admin.
+Route::get('/api/store/clients/lookup', function (Request $request) {
+    try {
+        $base = rtrim(env('ADMIN_API_URL', 'http://localhost:8001'), '/');
+        $res = Http::timeout(5)->get("{$base}/api/store/clients/lookup", [
+            'cedula' => $request->query('cedula'),
+        ]);
+        return response()->json($res->json() ?? ['ok' => false], $res->status() ?: 502);
+    } catch (\Throwable $e) {
+        return response()->json(['ok' => false, 'client' => null], 502);
+    }
+});
+
 // API genérica para datos de la tienda
 // 'products' y 'clients' se alimentan del sistema admin (julls-orden-de-pago);
 // se guarda una copia local como respaldo si el admin no está disponible.
