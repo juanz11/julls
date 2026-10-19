@@ -79,11 +79,15 @@ const DEFAULT_STATE = {
 };
 
 const PresupuestoApp = () => {
-    const [currentPage, setCurrentPage] = useState(0);
+    const [currentPage, setCurrentPage] = useState(() => {
+        const p = parseInt(new URLSearchParams(window.location.search).get('page'), 10);
+        return p >= 1 && p <= 3 ? p - 1 : 0;
+    });
     const [editing, setEditing] = useState(false);
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
     const isAdmin = sessionStorage.getItem(AUTH_KEY) === '1';
+    const isExport = new URLSearchParams(window.location.search).has('export');
 
     const [p1, setP1] = useState(DEFAULT_STATE.p1);
     const [p2, setP2] = useState(DEFAULT_STATE.p2);
@@ -243,7 +247,7 @@ const PresupuestoApp = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-700">
                     {p2.cards.map((item, i) => (
                         <div key={i} className="relative bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-                            {i > 0 && (
+                            {item.soon && (
                                 <div className="absolute top-0 right-0 overflow-hidden rounded-tr-2xl" style={{ width: 100, height: 100, pointerEvents: 'none' }}>
                                     <div className="absolute top-[22px] right-[-28px] rotate-45 text-white text-[11px] font-black uppercase tracking-wide text-center"
                                         style={{ backgroundColor: '#dc2626', width: 110, padding: '5px 0' }}>
@@ -252,6 +256,7 @@ const PresupuestoApp = () => {
                                 </div>
                             )}
                             <div>
+                                {item.image && <img src={item.image} alt={item.name} className="w-full h-56 object-cover rounded-xl mb-4 shadow-sm" />}
                                 <span className="text-[10px] font-bold text-white px-2 py-1 rounded-md mb-4 inline-block tracking-tighter" style={{ backgroundColor: item.tagBg }}>
                                     <Editable value={item.tag} onChange={v => updateP2Card(i, 'tag', v)} editing={editing} />
                                 </span>
@@ -394,6 +399,7 @@ const PresupuestoApp = () => {
 
                 <div className="px-4 md:px-12 py-8 flex justify-between items-center" style={{ backgroundColor: '#faf0f1' }}>
                     <Editable value={footer} onChange={setFooter} editing={editing} className="text-xs text-slate-400 font-medium" />
+                    {!isExport && (
                     <div className="flex gap-2">
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
@@ -413,6 +419,7 @@ const PresupuestoApp = () => {
                             {currentPage === pages.length - 1 ? 'Finalizar' : 'Siguiente'} <ChevronRight size={20} />
                         </button>
                     </div>
+                    )}
                 </div>
             </div>
         </div>

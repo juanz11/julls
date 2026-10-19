@@ -10,9 +10,9 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-/* Al imprimir solo sale el ticket de la factura del POS */
+/* Al imprimir solo sale el ticket de la factura del POS (si existe en la página) */
 @media print {
-    body * {
+    body:has(#factura-print) * {
         visibility: hidden;
     }
     #factura-print,
