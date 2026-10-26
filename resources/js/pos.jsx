@@ -196,6 +196,7 @@ function PosApp() {
                     customer_phone: effectiveCustomer?.phone || null,
                     customer_email: effectiveCustomer?.email || null,
                     customer_cedula: effectiveCustomer?.cedula || null,
+                    cashier_email: customer?.is_admin ? (customer.email || null) : null,
                     items: cart.map(i => ({ product_id: i.product_id, name: i.name, qty: i.qty, price: i.price })),
                     payment_method: method,
                     payment_reference: reference || null,
@@ -704,7 +705,7 @@ function CustomerModal({ onClose, onAuth, onCaja, adminOnly }) {
                 const res = await fetch(`/api/store/clients/lookup?cedula=${encodeURIComponent(ced)}`, { headers: { 'Accept': 'application/json' } });
                 const data = await res.json().catch(() => null);
                 if (data?.ok && data.client) {
-                    setForm(f => ({ ...f, name: f.name || data.client.name || '', phone: f.phone || data.client.phone || '' }));
+                    setForm(f => ({ ...f, name: f.name || data.client.name || '', phone: f.phone || data.client.phone || '', email: f.email || data.client.email || '' }));
                 }
             } catch { /* sin conexión: se llena manual */ }
             setLookingUp(false);
@@ -719,7 +720,7 @@ function CustomerModal({ onClose, onAuth, onCaja, adminOnly }) {
             return;
         }
         if (mode === 'caja') {
-            onCaja({ id: null, name: form.name, cedula: form.cedula, phone: form.phone, email: '' });
+            onCaja({ id: null, name: form.name, cedula: form.cedula, phone: form.phone, email: form.email || '' });
             return;
         }
         setBusy(true);
@@ -778,7 +779,8 @@ function CustomerModal({ onClose, onAuth, onCaja, adminOnly }) {
                             </div>
                             <input required type="text" value={form.name} onChange={set('name')} placeholder="Nombre del cliente" className={inputCls} style={inputStyle} />
                             <input required type="tel" value={form.phone} onChange={set('phone')} placeholder="Teléfono" className={inputCls} style={inputStyle} />
-                            <p className="text-[11px] text-slate-400">Registro manual en caja — solo disponible para el admin; el comprador no queda con cuenta, solo se asocia a la venta.</p>
+                            <input type="email" value={form.email} onChange={set('email')} placeholder="Correo (opcional — recibe la factura)" className={inputCls} style={inputStyle} />
+                            <p className="text-[11px] text-slate-400">Registro manual en caja — solo disponible para el admin. Si el cliente da su correo, la factura le llega a él; si no, llega a tu correo de admin.</p>
                         </>
                     ) : (
                         <>
