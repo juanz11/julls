@@ -40,6 +40,7 @@ function PosApp() {
     const [saving, setSaving] = useState(false);
     const [successOrder, setSuccessOrder] = useState(null);
     const [authOpen, setAuthOpen] = useState(false);
+    const [cartOpen, setCartOpen] = useState(false);
     const [customer, setCustomer] = useState(() => {
         try { return JSON.parse(localStorage.getItem(CUSTOMER_KEY)); } catch { return null; }
     });
@@ -240,6 +241,57 @@ function PosApp() {
         }
     };
 
+    const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+
+    // Panel del carrito: se usa en la barra lateral (desktop) y en el drawer móvil
+    const cartPane = (
+        <>
+            {/* Order lines */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                {cart.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+                        <ShoppingBag size={40} className="opacity-30" />
+                        <p className="text-sm font-medium">Agrega productos para comenzar</p>
+                    </div>
+                )}
+                {cart.map(item => (
+                    <button
+                        key={item.key}
+                        onClick={() => setSelectedLine(item.key)}
+                        className={`w-full text-left rounded-lg px-3 py-2 border transition-colors ${selectedLine === item.key ? 'border-pink-400 bg-pink-50' : 'border-transparent hover:bg-slate-50'}`}
+                    >
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <span className="font-black text-sm" style={{ color: PINK }}>{item.qty}</span>
+                                <p className="font-bold text-sm text-slate-800">{item.name}</p>
+                            </div>
+                            <span className="font-bold text-sm">${formatMoney(item.qty * item.price)}</span>
+                        </div>
+                    </button>
+                ))}
+            </div>
+
+            {/* Summary */}
+            <div className="border-t p-3 space-y-1 text-sm" style={{ borderColor: '#f0dde3' }}>
+                <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>${formatMoney(totals.subtotal)}</span></div>
+                <div className="flex justify-between text-slate-500"><span>Impuestos ({invoiceCfg.iva}%)</span><span>${formatMoney(totals.tax)}</span></div>
+                <div className="flex justify-between text-xl font-black pt-1" style={{ color: PINK }}><span>Total</span><span>${formatMoney(totals.total)}</span></div>
+            </div>
+
+            {/* Actions */}
+            <div className="border-t p-2" style={{ borderColor: '#f0dde3' }}>
+                <div className="flex gap-2">
+                    <button onClick={() => selectedLine && removeLine(selectedLine)} className="flex-1 py-3 rounded-lg border text-sm font-bold text-red-500 hover:bg-red-50" style={{ borderColor: '#fecaca' }}>
+                        <Trash2 size={16} className="inline mr-1" /> Quitar
+                    </button>
+                    <button onClick={() => { setCartOpen(false); customer?.is_admin ? setAuthOpen(true) : customer ? setPayOpen(true) : setAuthOpen(true); }} disabled={cart.length === 0} className="flex-[2] py-3 rounded-lg text-white text-sm font-bold disabled:bg-slate-300" style={{ backgroundColor: PINK }}>
+                        Pago ${formatMoney(totals.total)}
+                    </button>
+                </div>
+            </div>
+        </>
+    );
+
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: LIGHT }}><div className="text-slate-400 font-medium">Cargando...</div></div>;
     }
@@ -289,52 +341,23 @@ function PosApp() {
 
             {/* Main POS */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Left pane */}
-                <div className="w-full sm:w-[420px] flex-none flex flex-col border-r bg-white" style={{ borderColor: '#f0dde3' }}>
-                    {/* Order lines */}
-                    <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                        {cart.length === 0 && (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-2">
-                                <ShoppingBag size={40} className="opacity-30" />
-                                <p className="text-sm font-medium">Agrega productos para comenzar</p>
-                            </div>
-                        )}
-                        {cart.map(item => (
-                            <button
-                                key={item.key}
-                                onClick={() => setSelectedLine(item.key)}
-                                className={`w-full text-left rounded-lg px-3 py-2 border transition-colors ${selectedLine === item.key ? 'border-pink-400 bg-pink-50' : 'border-transparent hover:bg-slate-50'}`}
-                            >
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-black text-sm" style={{ color: PINK }}>{item.qty}</span>
-                                        <p className="font-bold text-sm text-slate-800">{item.name}</p>
-                                    </div>
-                                    <span className="font-bold text-sm">${formatMoney(item.qty * item.price)}</span>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
+                {/* Left pane (desktop) */}
+                <div className="hidden sm:flex sm:w-[420px] flex-none flex-col border-r bg-white" style={{ borderColor: '#f0dde3' }}>
+                    {cartPane}
+                </div>
 
-                    {/* Summary */}
-                    <div className="border-t p-3 space-y-1 text-sm" style={{ borderColor: '#f0dde3' }}>
-                        <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>${formatMoney(totals.subtotal)}</span></div>
-                        <div className="flex justify-between text-slate-500"><span>Impuestos ({invoiceCfg.iva}%)</span><span>${formatMoney(totals.tax)}</span></div>
-                        <div className="flex justify-between text-xl font-black pt-1" style={{ color: PINK }}><span>Total</span><span>${formatMoney(totals.total)}</span></div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="border-t p-2" style={{ borderColor: '#f0dde3' }}>
-                        <div className="flex gap-2">
-                            <button onClick={() => selectedLine && removeLine(selectedLine)} className="flex-1 py-3 rounded-lg border text-sm font-bold text-red-500 hover:bg-red-50" style={{ borderColor: '#fecaca' }}>
-                                <Trash2 size={16} className="inline mr-1" /> Quitar
-                            </button>
-                            <button onClick={() => customer?.is_admin ? setAuthOpen(true) : customer ? setPayOpen(true) : setAuthOpen(true)} disabled={cart.length === 0} className="flex-[2] py-3 rounded-lg text-white text-sm font-bold disabled:bg-slate-300" style={{ backgroundColor: PINK }}>
-                                Pago ${formatMoney(totals.total)}
+                {/* Cart drawer (móvil): el pedido abre a pantalla completa */}
+                {cartOpen && (
+                    <div className="fixed inset-0 z-40 flex flex-col bg-white sm:hidden">
+                        <div className="flex-none px-3 py-2 border-b flex items-center justify-between bg-white" style={{ borderColor: '#f0dde3' }}>
+                            <span className="font-black text-sm" style={{ color: PINK }}>Tu pedido</span>
+                            <button onClick={() => setCartOpen(false)} className="p-2 rounded-lg bg-slate-100 text-slate-600">
+                                <X size={18} />
                             </button>
                         </div>
+                        {cartPane}
                     </div>
-                </div>
+                )}
 
                 {/* Right pane */}
                 <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
@@ -377,7 +400,7 @@ function PosApp() {
                                     return (
                                         <div
                                             key={product.id}
-                                            className={`relative bg-white rounded-xl border p-2 flex flex-col items-center justify-between text-center h-36 hover:shadow-md transition-shadow ${product.stock <= 0 ? 'opacity-50' : ''}`}
+                                            className={`relative bg-white rounded-xl border p-2 flex flex-col items-center justify-between text-center h-44 hover:shadow-md transition-shadow ${product.stock <= 0 ? 'opacity-50' : ''}`}
                                             style={{ borderColor: '#f0dde3' }}
                                         >
                                             {product.image ? (
@@ -385,8 +408,8 @@ function PosApp() {
                                             ) : (
                                                 <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mb-1"><ShoppingBag size={20} className="text-slate-300" /></div>
                                             )}
-                                            <div className="flex-1 flex flex-col justify-center">
-                                                <p className="text-xs font-bold text-slate-800 leading-tight">{product.name}</p>
+                                            <div className="flex-1 flex flex-col justify-center min-w-0">
+                                                <p className="text-xs font-bold text-slate-800 leading-tight line-clamp-2">{product.name}</p>
                                                 {product.tag && (
                                                     <span className="inline-block text-[9px] font-bold text-white px-1.5 py-0.5 rounded mt-0.5 tracking-wide" style={{ backgroundColor: PINK }}>{product.tag}</span>
                                                 )}
@@ -419,6 +442,13 @@ function PosApp() {
                                 })}
                             </div>
                         )}
+                    </div>
+
+                    {/* Barra "Pedido" (móvil) */}
+                    <div className="flex-none sm:hidden border-t bg-white p-2" style={{ borderColor: '#f0dde3' }}>
+                        <button onClick={() => setCartOpen(true)} className="w-full py-3 rounded-lg text-white text-sm font-bold flex items-center justify-center gap-2" style={{ backgroundColor: PINK }}>
+                            <ShoppingBag size={16} /> Pedido ({cartCount}) · ${formatMoney(totals.total)}
+                        </button>
                     </div>
                 </div>
             </div>
