@@ -245,6 +245,7 @@ const JullsApp = () => {
             </nav>
 
             {/* BARRA DE CATEGORÍAS */}
+            {view !== 'home' && (
             <div className="w-full border-b bg-white" style={{ borderColor: '#f0dde3' }}>
                 <div className="max-w-6xl mx-auto px-4">
                     <div className="flex items-center justify-center gap-1 overflow-x-auto py-2 scrollbar-hide">
@@ -263,6 +264,7 @@ const JullsApp = () => {
                     </div>
                 </div>
             </div>
+            )}
             {/* BANNER - solo en home */}
             {view === 'home' && (
             <div className="relative w-full overflow-hidden" style={{ minHeight: 500 }}>
